@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="generator" content="pandoc">
+    <title>Software Carpentry: 데이터 과학</title>
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" type="text/css" href="css/bootstrap/bootstrap.css" />
+    <link rel="stylesheet" type="text/css" href="css/bootstrap/bootstrap-theme.css" />
+    <link rel="stylesheet" type="text/css" href="css/swc.css" />
+    <link rel="alternate" type="application/rss+xml" title="Software Carpentry Blog" href="http://software-carpentry.org/feed.xml"/>
+    <meta charset="UTF-8" />
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="https://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+    
+      ga('create', 'UA-59802572-17', 'auto');
+      ga('send', 'pageview');
+    
+    </script>
+  </head>
+  <body class="lesson">
+    <div class="container card">
+      <div class="banner">
+        <a href="http://software-carpentry.org" title="Software Carpentry">
+          <img alt="Software Carpentry banner" src="img/software-carpentry-banner.png" />
+        </a>
+      </div>
+      <article>
+      <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+          <h1 class="title">데이터 과학</h1>
+          <h2 class="subtitle">생활안전 - 보호관찰소와 범죄</h2>
+<section class="objectives panel panel-warning">
+<div class="panel-heading">
+<h2 id="학습-목표"><span class="glyphicon glyphicon-certificate"></span>학습 목표</h2>
+</div>
+<div class="panel-body">
+<ul>
+<li></li>
+<li>보호관찰소 위치정보를 시각화한다.</li>
+<li>전국 범죄를 지리정보로 시각화한다.</li>
+</ul>
+</div>
+</section>
+<h3 id="생활안전---보호관찰소와-범죄">1. 생활안전 - 보호관찰소와 범죄</h3>
+<p><img src="fig/geo-safety.png" alt="범죄정보 시각화" width="50%" /></p>
+<p>범죄발생에 대한 공공데이터를 확보한다. 공공데이터 포털에 올라가 있는 범죄데이터를 기준으로 작업을 시작한다. 공공데이터와 함께 보호관찰소 및 지소 정보를 <a href="http://www.moj.go.kr/HP/TSPB/spb_40/spb_4040.jsp">법무부 범죄예방정책국</a> 웹사이트에서 정리하여 구글 지도 <code>geocode</code> API 를 사용하여 위도와 경도 정보를 붙여 자바스크립트 라이브러리 <code>leafelt</code>을 활용하여 R언어로 작성한다.</p>
+<p>범죄데이터는 공공데이터 포털과 <a href="http://kosis.kr/statHtml/statHtml.do?orgId=132&amp;tblId=DT_13204_3105&amp;vw_cd=MT_ZTITLE&amp;list_id=132_13204_GKIT659_gik986_di654&amp;seqNo=&amp;lang_mode=ko&amp;language=kor&amp;obj_var_id=&amp;itm_id=&amp;conn_path=E1">국가통계포털(KOSIS)</a>에서 이용가능한 최신 데이터를 활용한다.</p>
+<p>전국적으로 2014년 <strong>1,778,966 </strong>건 발생했다. 또한, , 절도범죄, 폭력범죄, 지능범죄 등 총 15개 범죄가 유형별로 있으며, 각 범죄별로 내부를 뜯어보면 의 경우, 살인기수, 강도, 강간, 유사강간, 강제추행, 방화 등으로 쪼개진다. 이 자체만으로도 대한민국 국민은 누구나 범죄에 노출되어 있음을 실감하게 된다.</p>
+<aside class="callout panel panel-info">
+<div class="panel-heading">
+<h3 id="보호관찰제도-moj"><span class="glyphicon glyphicon-pushpin"></span>보호관찰제도 <a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a></h3>
+</div>
+<div class="panel-body">
+<p>범죄인을 구금하는 대신 일정한 의무를 조건으로 자유로운 사회생활을 허용하면서 국가공무원인 보호관찰관이 직접 또는 민간자원 봉사자인 범죄예방위원의 협조를 받아 지도 감독 및 원호를 하거나, 사회봉사 수강명령을 집행함으로써 성행을 교정하여 건전한 사회복귀를 촉진하고 재범을 방지하는 선진형사제도입니다.</p>
+</div>
+</aside>
+<h3 id="보호관찰소-지리정보-시각화">2. 보호관찰소 지리정보 시각화</h3>
+<p>보호관찰소 및 지소가 수도권 및 충청도 지역에 집중 배치되어 있는 것을 한눈에 확인할 수 있다. 또한, 지역을 확대하게 되면 사용자 거주지에 얼마나 가까이 있는지도 확인이 가능하다.</p>
+<p><a href="html/probation_office.html"><img src="fig/geo-probation-thumbnail.png" width="30%" ></a></p>
+<p>보호관찰소 및 지소가 위치한 자세한 정보 확인은 이미지 클릭</p>
+<h3 id="보호관찰소-지리정보-시각화-코드">2.1. 보호관찰소 지리정보 시각화 코드</h3>
+<p><code>geocode</code> 함수를 이용하여 보호관찰소 및 지소가 위치한 곳의 위도경도정보를 받아온다. 공공데이터의 위치정보는 간단히 “서울시”, “성남시”, “속초시” 등 간략한 정보만 나와있어, 이를 <code>geocode</code>에 넣게 되면 해당 도시의 대표 위도와 경도 정보가 반환된다.</p>
+<p>보호관찰소 지소의 경우 전체주소를 넣는다. 예를 들어, “논산지소”의 경우 “충청남도 논산시 시민로294길 27”<br />
+주소를 <code>geocode</code>의 인자값으로 밀어 넣는다.</p>
+<p>주소정보를 넣어 위도경도 정보를 <code>bind_cols</code> 함수로 합치게 되면 <code>leaflet</code>에 범례도 추가하고, 표식도 추가하고, 표식이 너무 많은 경우 <code>clusterOptions = markerClusterOptions()</code> 을 추가한다.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(readxl); <span class="kw">library</span>(ggmap); <span class="kw">library</span>(dplyr); <span class="kw">library</span>(leaflet)
+##===========================================================
+## 범죄데이터 가져오기 
+##===========================================================
+<span class="co"># 보호관찰소 위치</span>
+probation.rd &lt;-<span class="st"> </span><span class="kw">read_excel</span>(<span class="st">&quot;crime/data/범죄발생-2011-2014-지역.xlsx&quot;</span>, <span class="dt">sheet=</span><span class="st">&quot;merge&quot;</span>)
+
+##===========================================================
+## 위도경도 정보
+##===========================================================
+<span class="co"># 보호관찰소</span>
+probation.rd.lonlat &lt;-<span class="st"> </span><span class="kw">geocode</span>(probation.rd$city)
+crime.city.office &lt;-<span class="st"> </span><span class="kw">bind_cols</span>(probation.rd, probation.rd.lonlat)
+probation.office
+
+##===========================================================
+## 지리정보 시각화
+##===========================================================
+<span class="co"># 최종 (군집 표시)</span>
+probation.office.html &lt;-<span class="st"> </span>
+<span class="kw">leaflet</span>(<span class="dt">data =</span> probation.office) %&gt;%<span class="st"> </span><span class="kw">addTiles</span>() %&gt;%
+<span class="st">  </span><span class="kw">addMarkers</span>(~lon, ~lat, <span class="dt">popup =</span> ~<span class="kw">as.character</span>(city), <span class="dt">clusterOptions =</span> <span class="kw">markerClusterOptions</span>()) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">addLegend</span>(<span class="st">&quot;bottomright&quot;</span>, <span class="dt">colors=</span> <span class="st">&quot;#ffa500&quot;</span>, <span class="dt">labels=</span><span class="st">&quot;위치&quot;</span>, <span class="dt">title=</span><span class="st">&quot;보호관찰소 및 지소&quot;</span>)
+
+##===========================================================
+## HTML 파일 내보내기
+##===========================================================
+<span class="kw">library</span>(htmlwidgets)
+<span class="kw">saveWidget</span>(<span class="dt">widget=</span>probation.office.html,<span class="dt">file=</span><span class="st">&quot;probation_office.html&quot;</span>)</code></pre></div>
+<h3 id="년-범죄-발생정보-시각화">2.2. 2014년 범죄 발생정보 시각화</h3>
+<p>KOSIS 국가통계포털에서 범죄발생데이터를 다운로드하여 <code>read_excel()</code> 함수로 불러 읽어온다. 죄종별로 데이터를 구분하고, 구글 지도 API 위경도 정보 매칭을 위해 키값으로 도시명을 사용한다. 불러온 데이터가 맞는지 검증차원에서 <code>1,778,966</code> 범죄발생건수가 2014년 동일한지 엑셀원본과 검증한다.</p>
+<p><a href="html/crime_korea_2014.html"><img src="fig/geo-crime-2014.png" width="30%" ></a></p>
+<p>자세한 도시별 2014년 범죄발생 내역을 확인하려면 상기 지도이미지를 클릭합니다.</p>
+<p><code>crime.2014.cl$city</code> 도시를 기준으로 위도경도정보를 구글 지도API <code>geocode</code>로 붙여넣는다.</p>
+<p><code>leaflet</code> 팩키지를 활용하여 범죄정보를 죄종별로 시각화한다.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">##===========================================================
+## 지역별 범죄 데이터 적개
+##===========================================================
+<span class="co"># KOSIS: http://kosis.kr/statHtml/statHtml.do?orgId=132&amp;tblId=DT_13204_3105&amp;vw_cd=MT_ZTITLE&amp;list_id=132_13204_GKIT659_gik986_di654&amp;seqNo=&amp;lang_mode=ko&amp;language=kor&amp;obj_var_id=&amp;itm_id=&amp;conn_path=E1</span>
+crime.rd &lt;-<span class="st"> </span><span class="kw">read_excel</span>(<span class="st">&quot;crime/data/crime-2011-2014.xlsx&quot;</span>, <span class="dt">sheet =</span> <span class="st">&quot;Sheet1&quot;</span>, <span class="dt">skip=</span><span class="dv">1</span>,
+                       <span class="dt">col_types =</span> <span class="kw">c</span>(<span class="st">&quot;text&quot;</span>,<span class="st">&quot;text&quot;</span>,<span class="kw">rep</span>(<span class="st">&quot;numeric&quot;</span>,<span class="dv">44</span>)))
+
+<span class="kw">names</span>(crime.rd) &lt;-<span class="st"> </span><span class="kw">paste0</span>(<span class="st">&quot;v&quot;</span>,<span class="kw">seq</span>(<span class="dt">from=</span><span class="dv">1</span>,<span class="dt">to=</span><span class="dv">46</span>,<span class="dt">by=</span><span class="dv">1</span>))
+crime.rd[<span class="kw">is.na</span>(crime.rd)] &lt;-<span class="st"> </span><span class="dv">0</span>
+crime<span class="fl">.2014</span>.cl &lt;-<span class="st"> </span>crime.rd %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">rename</span>(<span class="dt">year=</span>v1,<span class="dt">city=</span>v2,<span class="dt">cat01=</span>v4, <span class="dt">cat02=</span>v14, <span class="dt">cat03=</span>v15, <span class="dt">cat04=</span>v24, 
+         <span class="dt">cat05=</span>v34, <span class="dt">cat06=</span>v37, <span class="dt">cat07=</span>v38, <span class="dt">cat08=</span>v39, <span class="dt">cat09=</span>v40,
+         <span class="dt">cat10=</span>v41, <span class="dt">cat11=</span>v42, <span class="dt">cat12=</span>v43, <span class="dt">cat13=</span>v44, <span class="dt">cat14=</span>v45,<span class="dt">cat15=</span>v46) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">select</span>(year, city, <span class="kw">starts_with</span>(<span class="st">&quot;cat&quot;</span>)) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">filter</span>(year==<span class="st">&quot;2014&quot;</span> &amp;<span class="st"> </span>!(city %in%<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;계&quot;</span>)) ) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">city =</span> <span class="kw">paste0</span>(city,<span class="st">&quot;시&quot;</span>)) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">cat_tlt =</span> cat01+cat02+cat03+cat04+cat05+cat06+cat07+cat08+cat09+cat10+cat11+cat12+cat13+cat14+cat15)
+crime<span class="fl">.2014</span>.cl$cat_tlt %&gt;%<span class="st"> </span>sum <span class="co"># 1778966</span>
+
+##===========================================================
+## 위도경도 정보
+##===========================================================
+<span class="co"># 구글 지도 API 위경도 정보 결합</span>
+crime.lonlat &lt;-<span class="st"> </span><span class="kw">geocode</span>(crime<span class="fl">.2014</span>.cl$city)
+crime<span class="fl">.2014</span>.lonlat &lt;-<span class="st"> </span><span class="kw">bind_cols</span>(crime<span class="fl">.2014</span>.cl, crime.lonlat)
+<span class="co"># NA 값은 제외시킨다. -----&gt; leaflet에서 오동작 방지</span>
+crime<span class="fl">.2014</span>.lonlat &lt;-<span class="st"> </span>crime<span class="fl">.2014</span>.lonlat %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">lat =</span> <span class="kw">ifelse</span>(city %in%<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;기타도시시&quot;</span>), <span class="ot">NA</span>, lat)) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">lon =</span> <span class="kw">ifelse</span>(city %in%<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;기타도시시&quot;</span>), <span class="ot">NA</span>, lon)) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">filter</span>(!<span class="kw">is.na</span>(lat) |<span class="st"> </span>!<span class="kw">is.na</span>(lon))
+
+##===========================================================
+## 지리정보 시각화
+##===========================================================
+<span class="co"># 범죄정보 시각화</span>
+
+crime.korea<span class="fl">.2014</span> &lt;-<span class="st"> </span><span class="kw">leaflet</span>(<span class="dt">data =</span> crime<span class="fl">.2014</span>.lonlat) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="co"># 기본 그룹</span>
+<span class="st">  </span><span class="kw">addProviderTiles</span>(<span class="st">&quot;CartoDB.Positron&quot;</span>, <span class="dt">group =</span><span class="st">&quot;지도&quot;</span>) %&gt;%
+<span class="st">  </span><span class="kw">addProviderTiles</span>(<span class="st">&quot;Stamen.Toner&quot;</span>, <span class="dt">group =</span> <span class="st">&quot;흑백&quot;</span>) %&gt;%
+<span class="st">  </span><span class="kw">addProviderTiles</span>(<span class="st">&quot;OpenTopoMap&quot;</span>, <span class="dt">group =</span> <span class="st">&quot;위성&quot;</span>) %&gt;%
+<span class="st">  </span><span class="co"># 시각화 범죄그룹  </span>
+<span class="st">  </span><span class="kw">addCircles</span>(~lon, ~lat, <span class="dt">radius =</span> ~cat_tlt/<span class="dv">5</span>, <span class="dt">popup=</span>~city, <span class="dt">stroke =</span> <span class="ot">TRUE</span>, <span class="dt">group =</span> <span class="st">&quot;전체범죄&quot;</span>) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">hideGroup</span>(<span class="st">&quot;전체범죄&quot;</span>) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">addCircles</span>(<span class="dt">lng =</span> ~lon, <span class="dt">lat=</span>~lat, <span class="dt">radius =</span> ~cat01/<span class="dv">2</span>, <span class="dt">popup=</span>~city, <span class="dt">stroke =</span> <span class="ot">TRUE</span>, <span class="dt">group =</span> <span class="st">&quot;강력범죄&quot;</span>, <span class="dt">color=</span><span class="st">&quot;red&quot;</span>)  %&gt;%<span class="st">  </span>
+<span class="st">  </span><span class="co">#hideGroup(&quot;강력범죄&quot;) %&gt;% </span>
+<span class="st">  </span><span class="kw">addCircles</span>(<span class="dt">lng =</span> ~lon, <span class="dt">lat=</span>~lat, <span class="dt">radius =</span> ~cat02/<span class="dv">2</span>, <span class="dt">popup=</span>~city, <span class="dt">stroke =</span> <span class="ot">FALSE</span>, <span class="dt">group =</span> <span class="st">&quot;절도범죄&quot;</span>,  <span class="dt">color=</span><span class="st">&quot;grey&quot;</span>)  %&gt;%<span class="st">  </span>
+<span class="st">  </span><span class="kw">hideGroup</span>(<span class="st">&quot;절도범죄&quot;</span>) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">addCircles</span>(<span class="dt">lng =</span> ~lon, <span class="dt">lat=</span>~lat, <span class="dt">radius =</span> ~cat03/<span class="dv">2</span>, <span class="dt">popup=</span>~city, <span class="dt">stroke =</span> <span class="ot">FALSE</span>, <span class="dt">group =</span> <span class="st">&quot;폭력범죄&quot;</span>,  <span class="dt">color=</span><span class="st">&quot;purple&quot;</span>)  %&gt;%<span class="st">  </span>
+<span class="st">  </span><span class="kw">hideGroup</span>(<span class="st">&quot;폭력범죄&quot;</span>) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">addCircles</span>(<span class="dt">lng =</span> ~lon, <span class="dt">lat=</span>~lat, <span class="dt">radius =</span> ~cat04/<span class="dv">2</span>, <span class="dt">popup=</span>~city, <span class="dt">stroke =</span> <span class="ot">FALSE</span>, <span class="dt">group =</span> <span class="st">&quot;지능범죄&quot;</span>,  <span class="dt">color=</span><span class="st">&quot;violet&quot;</span>)  %&gt;%<span class="st">  </span>
+<span class="st">  </span><span class="kw">hideGroup</span>(<span class="st">&quot;지능범죄&quot;</span>) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">addCircles</span>(<span class="dt">lng =</span> ~lon, <span class="dt">lat=</span>~lat, <span class="dt">radius =</span> ~cat10/<span class="dv">2</span>, <span class="dt">popup=</span>~city, <span class="dt">stroke =</span> <span class="ot">FALSE</span>, <span class="dt">group =</span> <span class="st">&quot;교통범죄&quot;</span>,  <span class="dt">color=</span><span class="st">&quot;brown&quot;</span>)  %&gt;%<span class="st">  </span>
+<span class="st">  </span><span class="kw">hideGroup</span>(<span class="st">&quot;교통범죄&quot;</span>) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="co"># Layers control</span>
+<span class="st">  </span><span class="kw">addLayersControl</span>(
+    <span class="dt">baseGroups =</span> <span class="kw">c</span>(<span class="st">&quot;지도&quot;</span>,<span class="st">&quot;흑백&quot;</span>, <span class="st">&quot;위성&quot;</span>),
+    <span class="dt">overlayGroups =</span> <span class="kw">c</span>(<span class="st">&quot;전체범죄&quot;</span>, <span class="st">&quot;강력범죄&quot;</span>,<span class="st">&quot;절도범죄&quot;</span>,<span class="st">&quot;폭력범죄&quot;</span>,<span class="st">&quot;지능범죄&quot;</span>,<span class="st">&quot;교통범죄&quot;</span>),
+    <span class="dt">position =</span> <span class="st">&quot;bottomleft&quot;</span>,
+    <span class="dt">options =</span> <span class="kw">layersControlOptions</span>(<span class="dt">collapsed =</span> <span class="ot">FALSE</span>)
+  ) 
+
+##===========================================================
+## HTML 파일 내보내기
+##===========================================================
+<span class="kw">library</span>(htmlwidgets)
+<span class="kw">saveWidget</span>(<span class="dt">widget=</span>crime.korea<span class="fl">.2014</span> ,<span class="dt">file=</span><span class="st">&quot;crime_korea_2914.html&quot;</span>)</code></pre></div>
+<p>참으로 다양하고 많은 범죄가 죄종별로 분류가 된다. 특히, 절도범죄, 폭력범죄, 교통범죄, 지능범죄가 전체발생 범죄의 70~80%를 점유한다.</p>
+<table>
+<thead>
+<tr class="header">
+<th>순</th>
+<th>죄종별(대)</th>
+<th>죄종별(소)</th>
+<th>순</th>
+<th>죄종별(대)</th>
+<th>죄종별(소)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>강력범죄</td>
+<td>살인기수</td>
+<td>4</td>
+<td>지능범죄</td>
+<td>직무유기</td>
+</tr>
+<tr class="even">
+<td></td>
+<td></td>
+<td>살인미수등</td>
+<td></td>
+<td></td>
+<td>직권남용</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td></td>
+<td>강도</td>
+<td></td>
+<td></td>
+<td>증수뢰</td>
+</tr>
+<tr class="even">
+<td></td>
+<td></td>
+<td>강간・강제추행</td>
+<td></td>
+<td></td>
+<td>통화</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td></td>
+<td>강간</td>
+<td></td>
+<td></td>
+<td>문서・인장</td>
+</tr>
+<tr class="even">
+<td></td>
+<td></td>
+<td>유사강간</td>
+<td></td>
+<td></td>
+<td>유가증권인지</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td></td>
+<td>강제추행</td>
+<td></td>
+<td></td>
+<td>사기</td>
+</tr>
+<tr class="even">
+<td></td>
+<td></td>
+<td>기타 강간·강제추행등</td>
+<td></td>
+<td></td>
+<td>횡령</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td></td>
+<td>방화</td>
+<td></td>
+<td></td>
+<td>배임</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>절도범죄</td>
+<td></td>
+<td>5</td>
+<td>풍속범죄</td>
+<td>성풍속범죄</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>폭력범죄</td>
+<td>상해</td>
+<td>6</td>
+<td></td>
+<td>도박</td>
+</tr>
+<tr class="even">
+<td></td>
+<td></td>
+<td>폭행</td>
+<td>7</td>
+<td>특별경제범죄</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td></td>
+<td></td>
+<td>체포・감금</td>
+<td>8</td>
+<td>마약범죄</td>
+<td></td>
+</tr>
+<tr class="even">
+<td></td>
+<td></td>
+<td>협박</td>
+<td>9</td>
+<td>보건범죄</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td></td>
+<td></td>
+<td>약취・유인</td>
+<td>10</td>
+<td>환경범죄</td>
+<td></td>
+</tr>
+<tr class="even">
+<td></td>
+<td></td>
+<td>폭력행위</td>
+<td>11</td>
+<td>교통범죄</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td></td>
+<td></td>
+<td>공갈</td>
+<td>12</td>
+<td>노동범죄</td>
+<td></td>
+</tr>
+<tr class="even">
+<td></td>
+<td></td>
+<td>손괴</td>
+<td>13</td>
+<td>안보범죄</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td></td>
+<td></td>
+<td></td>
+<td>14</td>
+<td>선거범죄</td>
+<td></td>
+</tr>
+<tr class="even">
+<td></td>
+<td></td>
+<td></td>
+<td>15</td>
+<td>병역범죄</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td></td>
+<td></td>
+<td></td>
+<td>16</td>
+<td>기타범죄</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p><a href="http://www.moj.go.kr/HP/TSPB/spb_50/spb_50202010.jsp">범죄예방정책국 - 보호관찰</a><a href="#fnref1">↩</a></p></li>
+</ol>
+</div>
+        </div>
+      </div>
+      </article>
+      <div class="footer">
+        <a class="label swc-blue-bg" href="http://software-carpentry.org">Software Carpentry</a>
+        <a class="label swc-blue-bg" href="https://github.com/swcarpentry/lesson-template">Source</a>
+        <a class="label swc-blue-bg" href="mailto:admin@software-carpentry.org">Contact</a>
+        <a class="label swc-blue-bg" href="LICENSE.html">License</a>
+      </div>
+    </div>
+    <!-- Javascript placed at the end of the document so the pages load faster -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="css/bootstrap/bootstrap-js/bootstrap.js"></script>
+    <script src='https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>
+  </body>
+</html>

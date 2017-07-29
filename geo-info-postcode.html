@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="generator" content="pandoc">
+    <title>Software Carpentry: 데이터 과학</title>
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" type="text/css" href="css/bootstrap/bootstrap.css" />
+    <link rel="stylesheet" type="text/css" href="css/bootstrap/bootstrap-theme.css" />
+    <link rel="stylesheet" type="text/css" href="css/swc.css" />
+    <link rel="alternate" type="application/rss+xml" title="Software Carpentry Blog" href="http://software-carpentry.org/feed.xml"/>
+    <meta charset="UTF-8" />
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="https://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+    
+      ga('create', 'UA-59802572-17', 'auto');
+      ga('send', 'pageview');
+    
+    </script>
+  </head>
+  <body class="lesson">
+    <div class="container card">
+      <div class="banner">
+        <a href="http://software-carpentry.org" title="Software Carpentry">
+          <img alt="Software Carpentry banner" src="img/software-carpentry-banner.png" />
+        </a>
+      </div>
+      <article>
+      <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+          <h1 class="title">데이터 과학</h1>
+          <h2 class="subtitle">우편번호 지리정보 시각화</h2>
+<section class="objectives panel panel-warning">
+<div class="panel-heading">
+<h2 id="학습-목표"><span class="glyphicon glyphicon-certificate"></span>학습 목표</h2>
+</div>
+<div class="panel-body">
+<ul>
+<li>대한민국 우편번호를 행정표준코드관리시스템에 접속해서 다운로드한다.</li>
+<li>데이터 정제과정을 통해 지리정보 시각화를 위한 데이터 품질을 높인다.</li>
+<li>지리정보를 표식하는 가장 기본적인 작업흐름을 숙지한다.</li>
+</ul>
+</div>
+</section>
+<h3 id="우편번호가-담긴-지리정보-시각화">우편번호가 담긴 지리정보 시각화</h3>
+<p><a href="http://code.mogaha.go.kr">행정표준코드관리시스템</a>에서 우편번호를 다운로드 받는 경우 6자리 이전 우편번호를 습득하게 된다. 최신 5자리 우편번호는 <a href="http://www.epost.go.kr/search/zipcode/areacdAddressDown.jsp">인터넷 우체국</a> 웹사이트에서 다운로드 받을 수 있다. 물론 2015.06.25일 기준 6 자리 구 우편번호도 함께 다운로드 가능하다.</p>
+<p>우편번호가 담긴 데이터를 입수했다면, 다음 단계로 지리정보 시각화를 하려는 목표 데이터의 우편번호를 결합한다. 지리정보 시각화 데이터에 우편번호와 함께 주소정보가 있을 수 있으나, 정확하지 않을 수 있어 데이터 정제 차원에서 인터넷 우체국에서 다운로드 받은 정보와 결합을 추천한다. <code>dplyr</code> 팩키지 <code>left_join()</code> 함수에 데이터를 병합하는데 키로 우편번호를 사용한다.</p>
+<p>지리정보 시각화를 위한 데이터에 주소정보가 결합되면, 다음 단계로 깨끗한 주소정보를 <code>ggmap</code> 팩키지 <code>geocode()</code> 함수에 던져 위도와 경도 정보를 받아온다.</p>
+<p>위도, 경도 정보가 깨끗한 주소정보와 함께 결합되면 <code>leaflet</code> 팩키지 지리정보시각화 함수를 사용하여 시각화한다. 단순히 지리정보를 표식하여 지도에 찍고, 특정 표식을 클릭하게 되면 주소를 표식한다. 경기도 성남시 지역 10곳을 무작위로 뽑아 우편번호 정보를 이용하여 지도에 표식한다.</p>
+<p><img src="fig/geo-postcode.png" alt="지리정보 시각화" width="50%" /></p>
+<section class="prereq panel panel-warning">
+<div class="panel-heading">
+<h4 id="사전준비-사항"><span class="glyphicon glyphicon-education"></span>사전준비 사항</h4>
+</div>
+<div class="panel-body">
+<ul>
+<li>해당 우편번호가 담긴 데이터 : 예전 6자리 우편번호 혹은 최신 5자리 우편번호</li>
+<li>우편번호 데이터 인코딩 현황 확인 : 윈도우 환경이라면 신경쓸 것 없다.
+<ul>
+<li>맥 혹은 리눅스를 사용하거나, <code>utf-8</code>을 기본 인코딩으로 사용하는 경우 인코딩을 일치시킨다.</li>
+<li><code>CP949</code>, <code>EUC-KR</code>로 되어있는 경우 <code>utf-8</code>으로 변경한다.</li>
+<li>RStudio 및 Hadley Wickham이 작성한 대부분의 팩키지는 <code>utf-8</code>을 기본 인코딩으로 사용한다.</li>
+<li>PC 플랫폼이 아닌 웹기반으로 작업하는 경우 <code>utf-8</code>으로 인코딩 표준을 준수한다.</li>
+</ul></li>
+</ul>
+</div>
+</section>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">##==========================================================================
+## 팩키지 및 우편번호 데이터 불러오기
+##==========================================================================
+<span class="kw">library</span>(readr); <span class="kw">library</span>(dplyr); <span class="kw">library</span>(readxl); <span class="kw">library</span>(ggmap); <span class="kw">library</span>(leaflet)
+<span class="kw">setwd</span>(<span class="st">&quot;~/Dropbox/01_data_science&quot;</span>) <span class="co"># 윈도우</span>
+
+<span class="co"># 우편번호 코드 (5자리)</span>
+post.nrd &lt;-<span class="st"> </span><span class="kw">read_delim</span>(<span class="st">&quot;kor-map/우편번호-5자리-경기도.txt&quot;</span>, <span class="dt">delim=</span><span class="st">&quot;|&quot;</span>)
+<span class="kw">names</span>(post.nrd) &lt;-<span class="st"> </span><span class="kw">paste0</span>(<span class="st">&quot;v&quot;</span>,<span class="kw">seq</span>(<span class="dv">1</span>,<span class="dv">26</span>,<span class="dv">1</span>))
+post.nrd &lt;-<span class="st"> </span>post.nrd %&gt;%<span class="st"> </span><span class="kw">select</span>(v1,v2,v4,v6,v9) %&gt;%
+<span class="st">  </span><span class="kw">rename</span>(<span class="dt">post_code=</span>v1,<span class="dt">sido=</span>v2, <span class="dt">sigungu=</span>v4, <span class="dt">emd=</span>v6, <span class="dt">gil=</span>v9) %&gt;%
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">addr=</span><span class="kw">paste</span>(sido,sigungu,gil)) %&gt;%
+<span class="st">  </span><span class="kw">select</span>(post_code, addr)
+post.nrd
+
+<span class="co"># 성남지역 무작위 10</span>
+gongbo.rd &lt;-<span class="st"> </span><span class="kw">read_excel</span>(<span class="st">&quot;/data/random_100.xlsx&quot;</span>, <span class="dt">sheet=</span><span class="st">&quot;성남지역&quot;</span>)
+<span class="kw">names</span>(gongbo.rd) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;dong&quot;</span>,<span class="st">&quot;name&quot;</span>,<span class="st">&quot;post_code&quot;</span>,<span class="st">&quot;addr1&quot;</span>,<span class="st">&quot;addr2&quot;</span>)
+gongbo.rd
+
+<span class="co"># 데이터 자료형 일치 (문자형으로 통일)</span>
+post.nrd$post_code &lt;-<span class="st"> </span><span class="kw">sapply</span>(post.nrd$post_code, as.character)
+
+addr.dt &lt;-<span class="st"> </span><span class="kw">left_join</span>(gongbo.rd, post.nrd, <span class="dt">by=</span><span class="st">&quot;post_code&quot;</span>)
+addr.dt
+
+##==========================================================================
+## 우편번호 --&gt; 주소 --&gt; 위도경도 (geocode)
+##==========================================================================
+
+addr.lonlat &lt;-<span class="st"> </span>addr.dt %&gt;%<span class="st"> </span><span class="kw">select</span>(post_code, addr)
+
+geo.lonlat &lt;-<span class="st"> </span><span class="kw">geocode</span>(<span class="kw">enc2utf8</span>(addr.lonlat$addr), <span class="dt">source=</span><span class="st">&#39;google&#39;</span>, <span class="dt">output=</span><span class="st">&quot;latlona&quot;</span>)
+
+addr.mst &lt;-<span class="st"> </span><span class="kw">bind_cols</span>(addr.lonlat,geo.lonlat)
+addr.mst
+
+##==========================================================================
+## 지리정보 시각화 leaflet
+##==========================================================================
+
+<span class="kw">leaflet</span>(<span class="dt">data =</span> addr.mst) %&gt;%<span class="st"> </span><span class="kw">addTiles</span>() %&gt;%
+<span class="st">  </span><span class="kw">addMarkers</span>(~lon, ~lat, <span class="dt">popup =</span> ~<span class="kw">as.character</span>(addr))</code></pre></div>
+<p><code>leaflet</code> 팩키지는 R에서 지리정보 시각화를 위한 자바스크립트를 사용할 수 있도록 만들어졌다. 따라서 웹에서 자바스크립트로 코드 몇줄로 간단히 구현한 효과를 볼 수 있다.</p>
+<p><img src="fig/geo-postcode-marker.png" alt="분당 장소 표식 10곳" width="50%" /></p>
+        </div>
+      </div>
+      </article>
+      <div class="footer">
+        <a class="label swc-blue-bg" href="http://software-carpentry.org">Software Carpentry</a>
+        <a class="label swc-blue-bg" href="https://github.com/swcarpentry/lesson-template">Source</a>
+        <a class="label swc-blue-bg" href="mailto:admin@software-carpentry.org">Contact</a>
+        <a class="label swc-blue-bg" href="LICENSE.html">License</a>
+      </div>
+    </div>
+    <!-- Javascript placed at the end of the document so the pages load faster -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="css/bootstrap/bootstrap-js/bootstrap.js"></script>
+    <script src='https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>
+  </body>
+</html>

@@ -1,0 +1,236 @@
+---
+layout: page
+title: 데이터 과학
+subtitle: 제18대 대통령선거 
+output:
+  html_document: 
+    keep_md: yes
+  pdf_document:
+    latex_engine: xelatex
+mainfont: NanumGothic
+---
+
+
+```{r, include=FALSE}
+source("tools/chunk-options.R")
+# 0. 환경설정-------------------------------------------
+library(tidyverse)
+library(readxl)
+library(ggmap)
+library(maps)
+library(maptools)
+library(RColorBrewer)
+library(scales)
+library(rgdal)
+library(rgeos)
+library(maptools)
+library(gpclib)
+require(tmap)
+library(viridis)
+library(stringr)
+library(zoo)
+gpclibPermit()
+```
+> ## 학습 목표 {.objectives}
+>
+> * 제18대 대통령선거 투표결과를 시각화하여 이해한다. 
+
+## 제18대 대선 데이터 
+
+2012년도 대통령 선거 투표결과 데이터는 [중앙선거관리위원회](http://www.nec.go.kr/) 홈페이지에서 다운로드 받을 수 있다. 
+
+**중앙선거관리위원회 &rarr; 분야별 정보 &rarr; 선거정보 &rarr; 하단 자료실**
+
+- 제18대 대통령선거 투표구별 개표결과 [다운로드](http://www.nec.go.kr/portal/cmm/fms/FileDown.do?atchFileId=FILE_000000000061613&fileSn=1&bbsId=)
+- 제20대 국회의원선거 투표구별 개표결과 자료 [다운로드](http://www.nec.go.kr/portal/cmm/fms/FileDown.do?atchFileId=FILE_000000000146224&fileSn=1&bbsId=)
+
+
+## 환경설정
+
+공간정보를 활용하여 18대 대선 투표결과를 시각화하는데 많은 팩키지가 동원된다. 
+
+``` {r presid-setup, eval=FALSE}
+# 0. 환경설정-------------------------------------------
+library(tidyverse)
+library(readxl)
+library(ggmap)
+library(maps)
+library(maptools)
+library(RColorBrewer)
+library(scales)
+library(rgdal)
+library(rgeos)
+library(maptools)
+library(gpclib)
+library(tmap)
+library(viridis)
+library(stringr)
+library(xts)
+library(zoo)
+#gpclibPermit()
+```
+
+## 데이터 가져오기
+
+지리정보를 시각화할 경우 지도데이터(`.shp`)와 투표결과데이터(엑셀 파일, 선관위 배포 기준)가 필요하다.
+
+### 지도데이터
+
+지도데이터는 그 시점에 맞는 행정지도를 받아 활용한다. 
+[최신 행정구역(SHP) 다운로드](http://www.gisdeveloper.co.kr/entry/최신신-행정구역도-다운로드) 받을 때, 
+투표 주제도를 시각화할 단위를 *시도*, *시군구*, *읍면동*, *리* 기준에 맞춰 미리 결정한다.
+
+``` {r presid-shapefile, message=FALSE, warning=FALSE, message=FALSE}
+# 1. 지도 가져오기-------------------------------------------
+
+korea_sido_shp <-  readShapeSpatial("data/shapefile_sido/TL_SCCO_CTPRVN.shp", verbose=TRUE, 
+                                     proj4string=CRS("+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=955000 +y_0=2000000 
+                                                     +ellps=GRS80 +units=m +no_defs"))
+```
+
+### 대선 투표 데이터
+
+지도데이터와 마찬가지로 선관위 홈페이지에서 다운로드 한 엑셀 파일을 지도데이터에 맞춰 가공한다.
+
+``` {r presid-vote-data, message=FALSE, warning=FALSE, message=FALSE}
+# 2. 데이터 가져오기-------------------------------------------
+## 2.1. 대선 투표 데이터 --------------------------------------
+dat <- read_excel("data/제18대 대선 투표구별 개표자료.xls", sheet="대통령", skip=4)
+names(dat) <- c("sido", "sigun", "emd", "vote_station", "polls", "votes", "pgh", "mji","etc_01", "etc_02", "etc_03", "etc_04","subtlt", "invalid", "abstain")
+glimpse(dat)
+
+dat <- dat %>% dplyr::filter(sigun !="합계") %>% 
+  mutate(emd = na.locf(emd)) %>% 
+  dplyr::filter(emd != "소계") %>% 
+  mutate(vote_station = ifelse(is.na(vote_station), paste0(emd, "_", sigun), vote_station)) %>% 
+  dplyr::filter(vote_station != "소계") %>% ungroup
+
+
+by_sido <- dat %>% dplyr::group_by(sido) %>% 
+  dplyr::summarise(polls_tlt = sum(polls),
+                   votes_tlt = sum(votes),
+                   pgh_tlt = sum(pgh),
+                   mji_tlt = sum(mji),
+                   invalid_tlt = sum(invalid),
+                   abstain_tlt = sum(abstain)) %>% 
+  mutate(vote_diff = pgh_tlt - mji_tlt) %>% ungroup
+
+names(by_sido) <- c("CTP_KOR_NM", "votes_tlt", "ballot_tlt", "pgh", 
+                    "mji", "invalid_tlt", "abstain_tlt", "vote_diff")
+```
+
+### 지도데이터와 투표데이터 병합
+
+``` {r presid-data-merge, message=FALSE, warning=FALSE, message=FALSE}
+# 3. 지도 데이터 병합(@data 방식)-------------------------------------------
+sido_vote_shp <- merge(korea_sido_shp,  by_sido, by='CTP_KOR_NM')
+```
+
+## 대선 투표결과 시각화
+
+### 시도별 총투표수 
+
+투표 결과를 각 시도별로 `viridis` 색상을 활용하여 총투표수를 시각화한다.
+
+``` {r presid-tmap-ballots, message=FALSE, warning=FALSE, message=FALSE}
+# 4. 주제도 시각화(tmap)-------------------------------------------
+## 4.1. 전체 -------------------------------
+pal10 <- viridis(10, option="D")
+
+tm_shape(sido_vote_shp) + 
+  tm_fill("ballot_tlt",
+    style = "kmeans",
+    title = "총투표",
+    palette=pal10,
+    n=10) +
+  tm_borders(alpha=.7, lwd=2) +
+  tm_layout(outer.margins=0, asp=0, scale=.8) 
+```
+
+### 시도별 총투표수 
+
+투표결과를 `facet` 기능을 활용하여 각 시도별로 나눠 살펴볼 수도 있다.
+각 시도 수준에서는 큰 의미는 없지만, 이런 기능도 가능하다는 정도로 살펴본다.
+
+``` {r presid-tmap-ballots-facet, message=FALSE, warning=FALSE, message=FALSE}
+## 4.2. Facet -------------------------------
+pal10 <- viridis(10, option="D")
+# tmap_mode("plot")
+
+tm_shape(sido_vote_shp) + 
+  tm_fill("ballot_tlt",
+          style = "kmeans",
+          title = "총투표",
+          palette=pal10,
+          n=10) +
+  tm_borders(alpha=.7, lwd=2) +
+  tm_facets(by="CTP_KOR_NM", free.coords=TRUE) +
+  tm_layout(legend.show = FALSE, outer.margins=0)
+```
+
+### 박근혜, 문재인 두 후보 비교 [^tmap-side-by-side-plot]
+
+[^tmap-side-by-side-plot]: [Plot 2 tmap objects side-by-side](http://stackoverflow.com/questions/34344454/plot-2-tmap-objects-side-by-side) 
+
+박근혜, 문재인 두 후보 투표수를 나란히 지리정보를 활용하여 비교할 경우 `grid` 팩키지의 도움을 받아 구현한다.
+박근혜 후보 투표수 주제도, 문재인 후보 투표수 주제도를 객체로 저장해 놓고서 `grid` 팩키지를 활용하여 한장의 그림을 완성한다.
+
+``` {r presid-tmap-side-by-side, message=FALSE, warning=FALSE, message=FALSE}
+## 4.3. 박근혜 vs 문재인 -------------------------------
+## 박근혜 문재인 투표 나란히 비교
+# tmap_mode("plot")
+pal10 <- viridis(6, option="D")
+
+pgh_tmap <- tm_shape(sido_vote_shp) + 
+  tm_fill("pgh",
+          style = "fixed",
+          title = "박근혜",
+          palette=pal10,
+          breaks=c(seq(0,3000000, by=500000))) +
+  tm_borders(alpha=.7, lwd=2) +
+  tm_layout(outer.margins=0, asp=0, scale=.8) 
+
+mji_tmap <- tm_shape(sido_vote_shp) + 
+  tm_fill("mji",
+          style = "fixed",
+          title = "문재인",
+          palette=pal10,
+          breaks=c(seq(0,3000000, by=500000))) +
+  tm_borders(alpha=.7, lwd=2) +
+  tm_layout(outer.margins=0, asp=0, scale=.8) 
+
+## 나란히 한장에 찍기
+library(grid)
+grid.newpage()
+pushViewport(viewport(layout=grid.layout(1,2)))
+print(pgh_tmap, vp=viewport(layout.pos.col = 1))
+print(mji_tmap, vp=viewport(layout.pos.col = 2))
+```
+
+### 박근혜, 문재인 표차이 인터랙티브 분석
+
+박근혜, 문재인 두 후보간 표차이를 `leaflet` 기능을 활용하여 인터랙티브하게 작성한다.
+`tmap`에는 tmap_mode("plot") 모드로 정적 공간정보 시각화 방식과 tmap_mode("view") 모드를 활용하여 
+인터랙티브 공간정보 분석이 가능하다.
+
+``` {r presid-tmap-interactive, message=FALSE, warning=FALSE, message=FALSE}
+## 4.3. 표차이 분석 : 박근혜 - 문재인 -------------------------------
+pal10 <- brewer.pal(10, "RdYlBu")
+
+# 박근혜 vs. 문재인 인터랙티브 팝업
+vote_diff_tmap <- tm_shape(sido_vote_shp) + 
+  tm_fill("vote_diff",
+          style = "kmeans",
+          palette=pal10,
+          n=10,
+          title=c("표차이", "표차이", "박근혜", "문재인"),
+          popup.vars=c("CTP_KOR_NM", "vote_diff", "pgh", "mji")) + 
+  tm_borders(alpha=.7, lwd=2) +
+  tm_layout(outer.margins=0, asp=0, scale=.8)
+
+tmap_mode("view")
+vote_diff_tmap
+# save_tmap(vote_diff_tmap, "sido_vote_diff.html")
+```
+
+

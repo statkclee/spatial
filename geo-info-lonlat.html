@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="generator" content="pandoc">
+    <title>Software Carpentry: 데이터 과학</title>
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" type="text/css" href="css/bootstrap/bootstrap.css" />
+    <link rel="stylesheet" type="text/css" href="css/bootstrap/bootstrap-theme.css" />
+    <link rel="stylesheet" type="text/css" href="css/swc.css" />
+    <link rel="alternate" type="application/rss+xml" title="Software Carpentry Blog" href="http://software-carpentry.org/feed.xml"/>
+    <meta charset="UTF-8" />
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="https://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+    
+      ga('create', 'UA-59802572-17', 'auto');
+      ga('send', 'pageview');
+    
+    </script>
+  </head>
+  <body class="lesson">
+    <div class="container card">
+      <div class="banner">
+        <a href="http://software-carpentry.org" title="Software Carpentry">
+          <img alt="Software Carpentry banner" src="img/software-carpentry-banner.png" />
+        </a>
+      </div>
+      <article>
+      <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+          <h1 class="title">데이터 과학</h1>
+          <h2 class="subtitle">지리정보 시각화 - 주소와 위도경도</h2>
+<section class="objectives panel panel-warning">
+<div class="panel-heading">
+<h2 id="학습-목표"><span class="glyphicon glyphicon-certificate"></span>학습 목표</h2>
+</div>
+<div class="panel-body">
+<ul>
+<li>공간자료(Spatial Data)와 자료구조를 이해한다.</li>
+<li>한국 주소명을 지리정보(위도, 경도)로 변환한다. <a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a></li>
+<li><code>dplyr</code> 팩키지 <code>mutate_geocode</code> 위도경도 함수를 파이프연산자와 결합하여 코드를 간결화한다.</li>
+</ul>
+</div>
+</section>
+<h2 id="공간자료spatial-data">1. 공간자료(Spatial Data)</h2>
+<p>좌표와 좌표기준계(coordinate reference system)를 활용하여 장소가 기술되는 자료를 공간자료(Spatial Data)라고 한다. 가장 흔히 알려진 좌표기준계는 위도와 경도를 활용하여 지구상 위치를 표식한 것이다. 보통 <span class="math inline">\(x-\)</span>축 방향을 의미하는 경도(longitude)를 먼저 넣고 나서 <span class="math inline">\(y-\)</span>축 방향을 나타내는 위도(latitude) 순으로 데이터를 분석한다.</p>
+<p><img src="fig/geo-spatial-data-workflow.png" alt="공간자료 작업 흐름도" width="77%" /></p>
+<p>공간자료를 R에서 작업하는 작업흐름은 크게 두가지가 있다. 이와 같은 작업흐름이 별도로 생겨나는 이유는 R 데이터프레임이 공간자료를 저장하기 적합하지 못하다는 내재적인 이유가 가장 크다.</p>
+<ul>
+<li>CSR(좌표기준계) 정보를 저장하는 방법이 데이터프레임에는 없다.</li>
+<li>공간자료를 저장하기 위해서 반복적으로 데이터프레임에 저장하는 구조라 저장공간 낭비가 심하다.</li>
+<li>공간자료를 표현하는 방법도 데이터프레임으로는 적절하지 못하다.</li>
+</ul>
+<p>이런 이유로 인해서 <code>sp</code>, <code>raster</code> 팩키지를 데이터프레임과 붙여 사용한다. 즉, 지리정보는 <code>.shp</code> 파일에 담기고, 지도를 사용해서 정보로 표현하는 데이터는 데이터프레임에 담기게 된다. 따라서 데이터프레임 정보를 <code>.shp</code> 파일에 녹여내기 위해서는 <code>merge()</code> 같은 병합연산자를 통해 합하는 과정이 수반된다.</p>
+<p><code>.shp</code> 파일 중심으로 작업을 할 것인가? 데이터프레임 중심으로 작업을 할 것이냐에 따라 크게 두가지 작업흐름으로 나눠진다.</p>
+<h3 id="데이터프레임-중심">1.1. 데이터프레임 중심</h3>
+<p>지도관련 정보는 <code>.shp</code> 파일을 통해 얻고 이를 <code>fortify()</code> 함수를 사용해서 데이터프레임으로 변환한다. 이제 지도에 표시할 정보도 데이터프레임이고, <code>.shp</code> 파일도 데이터프레임이라 <code>left_join</code> 같은 병합 연산자를 사용해서 통합 데이터프레임으로 생성시키고 나서 <code>ggplot</code> 그래픽 팩키지를 사용해서 마무리한다.</p>
+<h3 id="shp-파일-중심">1.2. <code>.shp</code> 파일 중심</h3>
+<p><code>.shp</code> 파일은 <code>shdf</code> 파일형태로 내부적으로 데이터프레임을 담고 있다. <code>@data</code> 명령어를 통해 접근할 수 있는데, 데이터프레임과 <code>.shp</code> 파일 <code>@data</code> 데이터프레임을 <code>merge()</code> 명령어로 병합시켜 데이터프레임이 포함된 <code>.shp</code> 파일을 생성시킨다. 그리고 나서 <code>tmap</code> 주제도를 활용하여 쉽게 시각화한다.</p>
+<h3 id="지리정보-api---geocode">1. 지리정보 API - <code>geocode</code></h3>
+<p>데이터를 지리정보와 결합하여 제공할 경우 현상에 대한 이해, 예측, 통찰력을 얻을 수 있다. 데이터를 지리정보와 결합할 때, 가장 필요한 것이 주소정보에 위도와 경도 정보를 붙여 지도에 표시하게 된다.</p>
+<p>주소정보가 제공되었을 때, 이에 해당되는 위도와 경도를 불러올 때 사용하는 것이 함수의 일종인 API다. 위경도 정보를 제공하는 업체로 구글, 네이버, 다음 등 여러 업체가 있다.</p>
+<p>R에서 구글, 네이버, 다음등에서 제공하는 지리정보 API를 활용할 경우, 크게 두가지 방법이 존재한다. 하나는 직접 구글, 네이버, 다음 지리정보 API 문서를 읽고 R코드로 작성하는 방식이 있고, 또 다른 하나는 <code>ggmap</code> 팩키지에서 이미 지리정보 API를 내재화해서 함수로 구현해 놓은 것을 호출해서 사용하는 방법이다.</p>
+<p>한국주소를 전달하면 위도, 경도 정보를 반환하는 API로 <a href="https://developers.google.com/maps/?hl=ko">구글 지도 API</a>를 기본으로 사용한다. <code>library(ggmap)</code> 팩키지를 불러오면 <code>geocode</code> 함수가 주소명을 받아 위도, 경도 정보를 반환한다. 하지만, Hadley Wickham이 관여한 팩키지는 <a href="encoding.html">인코딩</a>으로 <strong>utf-8</strong>을 사용한다. 따라서, 한국어는 <code>enc2utf8</code> 함수를 사용해서 인코딩을 바꿔 넣은 후에 <code>geocode</code> 함수에 인자로 넣어야 원하는 위도경도 정보를 반환받을 수 있다.</p>
+<p><img src="fig/geo-googleapi.png" alt="Google 지도 API" width="77%" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(ggmap)
+<span class="kw">library</span>(ggplot2)
+<span class="kw">geocode</span>(<span class="kw">enc2utf8</span>(<span class="st">&quot;속초&quot;</span>), <span class="dt">source=</span><span class="st">&#39;google&#39;</span>)</code></pre></div>
+<pre class="output"><code>FALSE        lon      lat
+FALSE 1 128.5918 38.20701
+</code></pre>
+<p>주소정보를 함께 출력하고자할 경우 <code>output=&quot;latlona&quot;</code> 선택옵션을 추가한다.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#geocode(enc2utf8(&quot;속초&quot;), source=&#39;google&#39;, output=&quot;latlona&quot;)</span>
+<span class="kw">geocode</span>(<span class="kw">enc2utf8</span>(<span class="st">&quot;속초&amp;language=ko&quot;</span>), <span class="dt">source=</span><span class="st">&#39;google&#39;</span>, <span class="dt">output=</span><span class="st">&quot;latlona&quot;</span>)</code></pre></div>
+<pre class="output"><code>FALSE   lon lat
+FALSE 1  NA  NA
+</code></pre>
+<p><code>&quot;속초&quot;</code>를 <code>geocode</code> 함수 인자로 넣은 경우와 <code>&quot;속초&amp;language=ko&quot;</code> 넣어 함께 넘긴 경우 한글주소로 출력되게 한다.</p>
+<h3 id="한개-이상-주소정보에서-위도경도-정보-뽑아내기">2. 한개 이상 주소정보에서 위도경도 정보 뽑아내기</h3>
+<p>구글 지도 API를 사용할 경우, 무료로 이용할 수 있는 반면에 사용자의 오남용을 방지하기 위해서 어느 API 서비스도 마찬가지지만, 구글이나 API 서비스 제공자 임의로 API를 변경할 수 있고, 사용제한을 둔다. 현재 글을 작성하는 시점에서 구글 지도 API의 경우 일일 2,500 번 무료로 사용이 가능하다.</p>
+<p><code>geocodeQueryCheck(userType = &quot;free&quot;)</code> 명령어를 사용하여 구글 지도 API 사용량을 확인할 수 있다.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">geocodeQueryCheck</span>(<span class="dt">userType =</span> <span class="st">&quot;free&quot;</span>)</code></pre></div>
+<pre class="output"><code>Error in geocodeQueryCheck(userType = &quot;free&quot;): 사용되지 않은 인자 (userType = &quot;free&quot;)
+</code></pre>
+<p>경기도 및 강원도 3개 지점에 대한 위도경도 정보를 받아오는 경우, 먼저 데이터프레임을 생성하고 나서, <code>enc2utf8()</code> 함수로 인코딩을 검증하고 나서 <code>geocode</code> API를 호출해서 위도경도 정보를 받아오면서 바로 데이터프레임에 붙인다.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(ggmap)
+<span class="kw">library</span>(ggplot2)
+<span class="kw">library</span>(plyr)
+
+<span class="kw">geocodeQueryCheck</span>(<span class="dt">userType =</span> <span class="st">&quot;free&quot;</span>)</code></pre></div>
+<pre class="output"><code>FALSE Error in geocodeQueryCheck(userType = &quot;free&quot;): 사용되지 않은 인자 (userType = &quot;free&quot;)
+</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">kangwon.loc &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="dt">addr=</span><span class="kw">c</span>(<span class="st">&quot;강원도 속초시 영랑동&quot;</span>, 
+                                 <span class="st">&quot;경기도 의왕시 포일세거리로 73&quot;</span>,
+                                 <span class="st">&quot;경기도 성남시 분당구 미금동&quot;</span>), <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span>)
+
+kangwon.loc$addr &lt;-<span class="st"> </span><span class="kw">enc2utf8</span>(kangwon.loc$addr)
+
+kangwon.loc.latlon &lt;-<span class="st"> </span><span class="kw">geocode</span>(kangwon.loc$addr, <span class="dt">source=</span><span class="st">&quot;google&quot;</span>)
+
+kangwon.loc.latlon &lt;-<span class="st"> </span><span class="kw">with</span>(kangwon.loc, <span class="kw">data.frame</span>(addr,
+                                   <span class="kw">laply</span>(addr, function(val){<span class="kw">geocode</span>(val)})))
+
+kangwon.loc.latlon  </code></pre></div>
+<pre class="output"><code>FALSE                            addr      lon      lat
+FALSE 1          강원도 속초시 영랑동  128.588  38.2239
+FALSE 2 경기도 의왕시 포일세거리로 73       NA       NA
+FALSE 3   경기도 성남시 분당구 미금동 127.1207 37.34337
+</code></pre>
+<p><code>geocodeQueryCheck(userType = &quot;free&quot;)</code> 명령어로 사용량이 3개 준 것을 확인할 수 있다.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">geocodeQueryCheck</span>(<span class="dt">userType =</span> <span class="st">&quot;free&quot;</span>)</code></pre></div>
+<pre class="output"><code>Error in geocodeQueryCheck(userType = &quot;free&quot;): 사용되지 않은 인자 (userType = &quot;free&quot;)
+</code></pre>
+<h3 id="dplyr-함수를-활용한-더-간결한-코드">3. <code>dplyr</code> 함수를 활용한 더 간결한 코드</h3>
+<p><code>dplyr</code>에서 제공하는 <code>mutate_geocode</code> 함수를 사용해서 위도경도 정보를 일괄적으로 받아와서 R 데이터프레임으로 저장한다.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(dplyr)
+kangwon.loc.dplyr &lt;-<span class="st"> </span>kangwon.loc %&gt;%<span class="st"> </span><span class="kw">mutate_geocode</span>(addr)
+kangwon.loc.dplyr</code></pre></div>
+<pre class="output"><code>FALSE                            addr      lon      lat
+FALSE 1          강원도 속초시 영랑동 128.5880 38.22390
+FALSE 2 경기도 의왕시 포일세거리로 73       NA       NA
+FALSE 3   경기도 성남시 분당구 미금동 127.1207 37.34337
+</code></pre>
+<p>경기도와 강원도 3개 주소정보를 구글 지도 API 지역에 전달하여 위도와 경도정보를 받아와서 이를 데이터프레임에 붙인다. 받아온 정보를 <code>kangwon.loc.dplyr</code> 데이터프레임에 저장하고 이를 활용하여 구글지도에 시각화를 한다.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">kangwonMap &lt;-<span class="st"> </span><span class="kw">qmap</span>(<span class="kw">enc2utf8</span>(<span class="st">&quot;속초&quot;</span>), <span class="dt">zoom =</span> <span class="dv">8</span>, <span class="dt">maptype =</span> <span class="st">&quot;toner-lite&quot;</span>)
+
+kangwonMap +<span class="st"> </span><span class="kw">geom_point</span>(<span class="dt">data =</span> kangwon.loc.dplyr, <span class="kw">aes</span>(lon,lat), <span class="dt">size =</span> <span class="dv">2</span>, <span class="dt">colour=</span><span class="st">&quot;blue&quot;</span>)</code></pre></div>
+<p><img src="fig/geo-info-qmap-1.png" title="plot of chunk geo-info-qmap" alt="plot of chunk geo-info-qmap" style="display: block; margin: auto;" /></p>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p><a href="http://lumiamitie.github.io/r/geocoding-with-r-02/">GeoCoding with R</a><a href="#fnref1">↩</a></p></li>
+</ol>
+</div>
+        </div>
+      </div>
+      </article>
+      <div class="footer">
+        <a class="label swc-blue-bg" href="http://software-carpentry.org">Software Carpentry</a>
+        <a class="label swc-blue-bg" href="https://github.com/swcarpentry/lesson-template">Source</a>
+        <a class="label swc-blue-bg" href="mailto:admin@software-carpentry.org">Contact</a>
+        <a class="label swc-blue-bg" href="LICENSE.html">License</a>
+      </div>
+    </div>
+    <!-- Javascript placed at the end of the document so the pages load faster -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="css/bootstrap/bootstrap-js/bootstrap.js"></script>
+    <script src='https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>
+  </body>
+</html>

@@ -14,8 +14,15 @@ title: 데이터 과학을 위한 공간통계
 
 ## 학습목차 
 
-- 공간 통계
-
+- [공간 통계 - 지리정보](geo-info.html)
+    - [주소와 위도경도](geo-info-lonlat.html)
+    - [Kormaps, leaflet 지리정보 시각화 기초](geo-info-kormaps.html)
+    - [우편번호 지리정보 시각화](geo-info-postcode.html)
+    - [단계구분도(choropleth) 지리정보 시각화](geo-info-choropleth.html)
+    - [생활안전 - 보호관찰소와 범죄](geo-info-crime.html)     
+    - [.shp 지도 일부 추출](geo-info-shapefile.html)
+    - [IP 주소 지리정보 시각화](geo-info-ip-address.html)
+    - [제18대 대통령선거](geo-18-president.html)
 
 ### xwMOOC 오픈 교재
 

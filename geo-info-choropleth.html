@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="generator" content="pandoc">
+    <title>Software Carpentry: 데이터 과학</title>
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" type="text/css" href="css/bootstrap/bootstrap.css" />
+    <link rel="stylesheet" type="text/css" href="css/bootstrap/bootstrap-theme.css" />
+    <link rel="stylesheet" type="text/css" href="css/swc.css" />
+    <meta charset="UTF-8" />
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    
+      ga('create', 'UA-59802572-16', 'auto');
+      ga('send', 'pageview');
+    
+    </script>
+  </head>
+  <body class="lesson">
+    <div class="container card">
+      <div class="banner">
+        <a href="http://xwmooc.net" title="xwMOOC">
+          <img alt="xwMOOC banner" src="img/xwMOOC.png" />
+        </a>
+      </div>
+      <article>
+      <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+          <h1 class="title">데이터 과학</h1>
+          <h2 class="subtitle">단계구분도(choropleth)</h2>
+<section class="objectives panel panel-warning">
+<div class="panel-heading">
+<h2 id="학습-목표"><span class="glyphicon glyphicon-certificate"></span>학습 목표</h2>
+</div>
+<div class="panel-body">
+<ul>
+<li>단계구분도를 이해한다.</li>
+<li>대한민국인구를 단계구분도를 사용하여 지리정보 시각화한다.</li>
+<li>단계구분도 전용 R 팩키지와 그래프 문법 ggplot 팩키지로 지리정보를 시각화한다.</li>
+</ul>
+</div>
+</section>
+<h3 id="단계구분도choropleth">0. 단계구분도(choropleth)</h3>
+<p><a href="https://en.wikipedia.org/wiki/Choropleth_map">단계구분도(Choropleth map)</a>는 주제도(thematic map)으로 인구밀도, 1인당 소득 같은 정보를 비례하여 음영처리나 패턴을 넣어 지도상에 표현하는 방식이다. 단계구분도를 단계구분도 전용 <code>choroplethr</code> 팩키지와 그래픽 문법 범용 <code>ggplot</code> 팩키지를 사용하여 지리정보로 도식화한다.</p>
+<h3 id="choroplethr-팩키지-단계구분도">1. <code>choroplethr</code> 팩키지 단계구분도</h3>
+<p><a href="https://cran.r-project.org/web/packages/choroplethr/index.html">choroplethr</a><a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>은 R에서 단계구분도 생성을 간략화하려는 목적으로 개발되었다. 특히, <a href="https://cran.r-project.org/web/packages/choroplethr/vignettes/i-creating-admin1-maps.html">Administrative Level 1 Maps</a> 소품문에 나와 있듯이, 인구조사 센서스 데이터가 있는 경우 쉽게 단계구분도를 쉽게 적용할 수 있다.</p>
+<section class="prereq panel panel-warning">
+<div class="panel-heading">
+<h4 id="사용시-주의사항"><span class="glyphicon glyphicon-education"></span>사용시 주의사항</h4>
+</div>
+<div class="panel-body">
+<ul>
+<li><code>admin1_choropleth</code> 함수는 지명은 <code>admin1.regions</code>에 <strong>기재된 영문명</strong> 을 사용한다.</li>
+<li>단계구분도에 사용되는 값은 항상 변수명이 <strong><code>value</code></strong> 만 가능하다.</li>
+</ul>
+</div>
+</section>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">##==========================================================================
+## 팩키지 및 데이터 가져오기
+##==========================================================================
+<span class="kw">library</span>(choroplethr);<span class="kw">library</span>(choroplethrAdmin1);<span class="kw">library</span>(Kormaps);<span class="kw">library</span>(dplyr)
+<span class="kw">setwd</span>(<span class="st">&quot;~/Dropbox/01_data_science&quot;</span>) <span class="co"># 윈도우</span>
+
+<span class="co"># 지도데이터 가져오기</span>
+<span class="kw">data</span>(admin1.regions)
+<span class="kw">head</span>(admin1.regions)
+
+admin.all &lt;-<span class="st"> </span><span class="kw">tbl_df</span>(admin1.regions)
+admin.kr &lt;-<span class="st">  </span><span class="kw">filter</span>(admin.all, <span class="kw">grepl</span>(<span class="st">&quot;south korea&quot;</span>, country))
+
+<span class="kw">admin1_map</span>(<span class="st">&quot;south korea&quot;</span>) <span class="co"># 가져온 데이터가 맞는 것인지 확인하는 명령어</span>
+
+<span class="co"># 시각화에 사용될 2010년 대한민국 인구센서스 데이터</span>
+df_korea_census &lt;-<span class="st"> </span>korpopmap1@data
+df_korea_census$name_eng &lt;-<span class="st"> </span><span class="kw">tolower</span>(df_korea_census$name_eng)
+
+df_korea_census_mapdata &lt;-<span class="st"> </span>df_korea_census %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">select</span>(<span class="dv">16</span>,<span class="dv">21</span>)
+
+<span class="kw">names</span>(df_korea_census_mapdata) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;region&quot;</span>,<span class="st">&quot;value&quot;</span>)
+
+<span class="co"># choroplethrAdmin1 지도영문명 일치</span>
+<span class="co"># 서울 --&gt; 서울특별시, 제주 --&gt; 제주특별자치시, 세종시는 자료가 없음 (검은색 표시)</span>
+
+df_korea_census_mapdata$region[df_korea_census_mapdata$region==<span class="st">&quot;seoul&quot;</span>] &lt;-<span class="st"> &quot;seoul-teukbyeolsi&quot;</span>
+df_korea_census_mapdata$region[df_korea_census_mapdata$region==<span class="st">&quot;jeju&quot;</span>] &lt;-<span class="st"> &quot;jeju-teukbyeoljachido&quot;</span>
+
+##==========================================================================
+## 대한민국 2010년 인구 단계구분도 지리정보 시각화
+##==========================================================================
+
+<span class="kw">admin1_choropleth</span>(<span class="dt">country.name =</span> <span class="st">&quot;south korea&quot;</span>, 
+                  <span class="dt">df           =</span> df_korea_census_mapdata, 
+                  <span class="dt">title        =</span> <span class="st">&quot;2010 대한민국 인구&quot;</span>, 
+                  <span class="dt">legend       =</span> <span class="st">&quot;인구(단위:명)&quot;</span>, 
+                  <span class="dt">num_colors   =</span> <span class="dv">1</span>)</code></pre></div>
+<p><code>choroplethr</code>, <code>choroplethrAdmin1</code>, <code>Kormaps</code> 팩키지를 활용한 단계구분도로 시각화하였다. 2010년 시점 세종시는 정보가 없어 검은색으로 나타나 있음에 주의한다. 경기도와 서울에 대분의 인구가 몰려있음을 단계구분도를 통해 시각적으로 확인할 수 있다.</p>
+<p><img src="fig/geo-choropleth.png" alt="2010년 인구 단계구분도" width="50%" /></p>
+<h3 id="ggplot-팩키지-단계구분도-ggplot-choropleth">2. <code>ggplot</code> 팩키지 단계구분도 <a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a></h3>
+<p>단계구분도 전용 <code>choroplethr</code> 팩키지 대신 범용 <code>ggplot</code> 팩키지를 사용해서도 단계구분도를 수월하게 지리정보로 표현할 수 있다. 기본적으로 <code>.shp</code> 파일에 <strong>id</strong> 칼럼을 단계구분도에 표시되는 정보에 연결하는 것이 핵심이다. 따라서, <code>.shp</code> 파일에 <strong>id</strong> 칼럼을 확인하고, 단계구분도로 단계를 표시할 데이터프레임에 필히 <strong>id</strong> 칼럼을 포함하여 매칭될 수 있도록한다.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">##==========================================================================
+## 팩키지 및 데이터 가져오기
+##==========================================================================
+<span class="co"># 라이브러리 및 작업 디렉토리 설정</span>
+
+<span class="kw">library</span>(choroplethr);<span class="kw">library</span>(choroplethrAdmin1);<span class="kw">library</span>(Kormaps);<span class="kw">library</span>(dplyr);<span class="kw">library</span>(ggmap);<span class="kw">library</span>(maptools);
+<span class="kw">library</span>(RColorBrewer);<span class="kw">library</span>(scales)
+<span class="kw">setwd</span>(<span class="st">&quot;~/Dropbox/01_data_science&quot;</span>) <span class="co"># 윈도우</span>
+
+##==========================================================================
+## .shp 파일 및 단계구분도 적용 데이터 가져오기
+##==========================================================================
+<span class="co"># `Kormaps` 팩키지 .shp 지도 사용 (2010 행정지도)</span>
+
+<span class="kw">class</span>(korpopmap1)
+<span class="kw">names</span>(korpopmap1)
+
+<span class="co"># 윈도우 인코딩문제 때문에 길어진 코드</span>
+tmp &lt;-<span class="st"> </span>korpopmap1@data %&gt;%<span class="st"> </span><span class="kw">select</span>(<span class="dv">21</span>)
+<span class="kw">names</span>(tmp) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;population&quot;</span>)
+tmp$population &lt;-<span class="st"> </span>tmp$population /<span class="st"> </span><span class="dv">10</span>^<span class="dv">4</span>
+
+<span class="co"># id 값을 .shp 파일과 동일하게 유지 (여기서 id는 각 시도에 대응)</span>
+kor.dat &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="dt">NAME_1=</span>korpopmap1$name_eng, <span class="dt">id=</span>korpopmap1$id)
+kor.dat &lt;-<span class="st"> </span><span class="kw">bind_cols</span>(kor.dat, tmp)
+kor.dat
+
+<span class="co"># ggplot으로 시각화 위해 데이터프레임으로 변환</span>
+korea.shp.f &lt;-<span class="st"> </span><span class="kw">fortify</span>(korpopmap1, <span class="dt">region =</span> <span class="st">&quot;id&quot;</span>)
+
+merge.shp.coef&lt;-<span class="kw">merge</span>(korea.shp.f, kor.dat, <span class="dt">by=</span><span class="st">&quot;id&quot;</span>, <span class="dt">all.x=</span><span class="ot">TRUE</span>)
+korea.population<span class="fl">.2010</span> &lt;-merge.shp.coef[<span class="kw">order</span>(merge.shp.coef$order), ] 
+
+<span class="kw">head</span>(korea.population<span class="fl">.2010</span>)
+
+##==========================================================================
+## 대한민국 2010년 인구 단계구분도 지리정보 시각화
+##==========================================================================
+<span class="co"># 1 단계 : 시범 지리정보 도식화</span>
+
+<span class="kw">ggplot</span>() +
+<span class="st">  </span><span class="kw">geom_polygon</span>(<span class="dt">data =</span> korea.population<span class="fl">.2010</span>, 
+               <span class="kw">aes</span>(<span class="dt">x =</span> long, <span class="dt">y =</span> lat, <span class="dt">group =</span> group, <span class="dt">fill =</span> population), 
+               <span class="dt">color =</span> <span class="st">&quot;black&quot;</span>, <span class="dt">size =</span> <span class="fl">0.25</span>) +<span class="st"> </span>
+<span class="st">  </span><span class="kw">coord_map</span>()
+
+<span class="co"># 2 단계 : 배포 품질 도식화</span>
+<span class="kw">ggplot</span>() +
+<span class="st">  </span><span class="kw">geom_polygon</span>(<span class="dt">data =</span> korea.population<span class="fl">.2010</span>, 
+               <span class="kw">aes</span>(<span class="dt">x =</span> long, <span class="dt">y =</span> lat, <span class="dt">group =</span> group, <span class="dt">fill =</span> population), 
+               <span class="dt">color =</span> <span class="st">&quot;black&quot;</span>, <span class="dt">size =</span> <span class="fl">0.25</span>) +<span class="st"> </span>
+<span class="st">  </span><span class="kw">coord_map</span>()+
+<span class="st">  </span><span class="kw">scale_fill_distiller</span>(<span class="dt">name=</span><span class="st">&quot;인구 : 단위(만명)&quot;</span>, <span class="dt">palette =</span> <span class="st">&quot;Greens&quot;</span>, <span class="dt">breaks =</span> <span class="kw">pretty_breaks</span>(<span class="dt">n =</span> <span class="dv">10</span>), <span class="dt">direction =</span> <span class="dv">1</span>)+
+<span class="st">  </span><span class="kw">theme_nothing</span>(<span class="dt">legend =</span> <span class="ot">TRUE</span>)+
+<span class="st">  </span><span class="kw">labs</span>(<span class="dt">title=</span><span class="st">&quot;대한민국 인구  (2010년)&quot;</span>)</code></pre></div>
+<p><img src="fig/geo-choropleth-ggplot.png" alt="2010년 인구 단계구분도" width="50%" /></p>
+<h3 id="ggmap-팩키지-단계구분도-ggmap-choropleth">3. <code>ggmap</code> 팩키지 단계구분도 <a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a></h3>
+<p>전용 단계구분도 <code>choroplethr</code> 팩키지 및 그래픽 문법을 따르는 범용 그래픽 <code>ggplot</code> 팩키지를 사용하여 단계구분도를 작성해봤고, 그래픽 문법을 따르는 전용 지리정보 제공 <code>ggmap</code> 팩키지를 사용한다. 기본적으로 <code>.shp</code> 파일에 <strong>id</strong> 칼럼을 단계구분도에 표시되는 정보에 연결하는 것이 핵심은 동일하다. <code>.shp</code> 파일에 <strong>id</strong> 칼럼을 확인하고, 단계구분도로 단계를 표시할 데이터프레임에 필히 <strong>id</strong> 칼럼을 포함하여 매칭될 수 있도록 한다.</p>
+<p>다만, <code>ggmap</code>을 사용할 경우 일반 지도 위에 <code>.shp</code> 파일을 올려 면(polygon)을 올릴 수 있다는 점에서 차이점이 생긴다.</p>
+<p>데이터는 앞서 사용한 <code>Kormaps</code> 팩키지에 뽑아낸 2010년 인구통계총조사 자료를 <code>.shp</code> 파일에 사용한 동일한 데이터를 사용하고 이를 <code>ggmap</code>의 <code>qmap</code> 함수를 활용하여 단계구분도로 시각화한다. 1단계로 먼저 <code>.shp</code> 파일이 구글지도에 겹치는지 확인하고 나서, 2단계로 인구정보를 단계구분도로 도식화한다.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># 1 단계 </span>
+korea &lt;-<span class="st"> </span><span class="kw">qmap</span>(<span class="st">&quot;south korea&quot;</span>, <span class="dt">zoom=</span><span class="dv">7</span>)
+
+korea +<span class="kw">geom_polygon</span>(<span class="kw">aes</span>(<span class="dt">x=</span>long,<span class="dt">y=</span>lat, <span class="dt">group=</span>group, <span class="dt">alpha=</span><span class="fl">0.25</span>), <span class="dt">data=</span>korea.population<span class="fl">.2010</span>, <span class="dt">fill=</span><span class="st">&#39;white&#39;</span>) +
+<span class="st">  </span><span class="kw">geom_polygon</span>(<span class="kw">aes</span>(<span class="dt">x=</span>long,<span class="dt">y=</span>lat, <span class="dt">group=</span>group), <span class="dt">data=</span>korea.population<span class="fl">.2010</span>, <span class="dt">color=</span><span class="st">&#39;black&#39;</span>, <span class="dt">fill=</span><span class="ot">NA</span>)
+
+<span class="co"># 2 단계: 연속형</span>
+korea +<span class="kw">geom_polygon</span>(<span class="kw">aes</span>(<span class="dt">x=</span>long,<span class="dt">y=</span>lat, <span class="dt">group=</span>group,  <span class="dt">fill=</span>population), 
+                    <span class="dt">data=</span>korea.population<span class="fl">.2010</span>, <span class="dt">color=</span><span class="st">&quot;black&quot;</span>) +
+<span class="st">  </span><span class="kw">scale_fill_gradient</span>(<span class="dt">low=</span><span class="st">&#39;white&#39;</span>, <span class="dt">high=</span><span class="st">&#39;red&#39;</span>)
+
+
+<span class="co"># 2 단계: 중간이 있는 연속형</span>
+korea +<span class="st"> </span><span class="kw">geom_polygon</span>(<span class="kw">aes</span>(<span class="dt">x=</span>long,<span class="dt">y=</span>lat, <span class="dt">group=</span>group, <span class="dt">fill=</span>population), <span class="dt">data=</span>korea.population<span class="fl">.2010</span>, <span class="dt">color=</span><span class="st">&#39;black&#39;</span>) +
+<span class="st">  </span><span class="kw">scale_fill_distiller</span>(<span class="dt">palette=</span><span class="st">&#39;Spectral&#39;</span>) +<span class="st"> </span><span class="kw">scale_alpha</span>(<span class="dt">range=</span><span class="kw">c</span>(<span class="fl">0.5</span>,<span class="fl">0.5</span>))</code></pre></div>
+<p>순서대로 단계구분도를 지도에 도식화하기 전에 <code>.shp</code> 파일에서 지도면 정보를 구글지도에 입히고 나서, 두가지 색상체계를 가지고 2010년 인구통계총조사 결과에 나온 인구정보를 지도에 도식화했다.</p>
+<p><img src="fig/geo-choropleth-ggmap.png" alt="2010년 인구 단계구분도" width="100%" /></p>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p><a href="https://cran.r-project.org/web/packages/choroplethr/index.html">choroplethr: Simplify the Creation of Choropleth Maps in R</a><a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p><a href="http://www.r-bloggers.com/mapping-with-ggplot-create-a-nice-choropleth-map-in-r/">Mapping with ggplot: Create a nice choropleth map in R</a><a href="#fnref2">↩</a></p></li>
+<li id="fn3"><p><a href="http://www.r-bloggers.com/plotting-choropleths-from-shapefiles-in-r-with-ggmap-toronto-neighbourhoods-by-population/">Plotting Choropleths from Shapefiles in R with ggmap – Toronto Neighbourhoods by Population</a><a href="#fnref3">↩</a></p></li>
+</ol>
+</div>
+        </div>
+      </div>
+      </article>
+      <div class="footer">
+        <a class="label swc-blue-bg" href="http://xwmooc.net">xwMOOC</a>
+        <a class="label swc-blue-bg" href="https://github.com/statkclee/data-science">Source</a>
+        <a class="label swc-blue-bg" href="mailto:i@xwmooc.net">Contact</a>
+        <a class="label swc-blue-bg" href="LICENSE.html">License</a>
+      </div>
+    </div>
+    <!-- Javascript placed at the end of the document so the pages load faster -->
+    <script src="http://software-carpentry.org/v5/js/jquery-1.9.1.min.js"></script>
+    <script src="css/bootstrap/bootstrap-js/bootstrap.js"></script>
+  </body>
+</html>

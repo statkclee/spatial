@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="generator" content="pandoc">
+    <title>Software Carpentry: 데이터 과학</title>
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" type="text/css" href="css/bootstrap/bootstrap.css" />
+    <link rel="stylesheet" type="text/css" href="css/bootstrap/bootstrap-theme.css" />
+    <link rel="stylesheet" type="text/css" href="css/swc.css" />
+    <link rel="alternate" type="application/rss+xml" title="Software Carpentry Blog" href="http://software-carpentry.org/feed.xml"/>
+    <meta charset="UTF-8" />
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="https://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+    
+      ga('create', 'UA-59802572-17', 'auto');
+      ga('send', 'pageview');
+    
+    </script>
+  </head>
+  <body class="lesson">
+    <div class="container card">
+      <div class="banner">
+        <a href="http://software-carpentry.org" title="Software Carpentry">
+          <img alt="Software Carpentry banner" src="img/software-carpentry-banner.png" />
+        </a>
+      </div>
+      <article>
+      <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+          <h1 class="title">데이터 과학</h1>
+          <h2 class="subtitle">Kormaps, leaflet 지리정보 시각화 기초</h2>
+<section class="objectives panel panel-warning">
+<div class="panel-heading">
+<h2 id="학습-목표"><span class="glyphicon glyphicon-certificate"></span>학습 목표</h2>
+</div>
+<div class="panel-body">
+<ul>
+<li>위도경도 정보 활용 <code>ggmap</code> 지리정보 시각화한다.</li>
+<li><code>Kormaps</code> 지리정보 시각화한다.</li>
+</ul>
+</div>
+</section>
+<h3 id="kormaps-지리정보-시각화-kormaps-01">1. <code>Kormaps</code> 지리정보 시각화 <a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a></h3>
+<p>2010년 시/도, 시/군/구, 읍/면/동 행정구역지도 3개를 갖고 인구총조사(2010년) 기준 지리정보를 제공하는 R 팩키지를 카톨릭대학교 <a href="http://web-r.org">문건웅</a> 교수님께서 개발하여 공개하였다.</p>
+<p><code>submap</code> 관련 일부 동작이 되지 않는 경우도 있지만, 빠르게 인구총조사결과를 대한민국 지리정보로 도식화하는데 좋은 기능을 제공하고 있다.</p>
+<p><code>Kormaps</code> 팩키지를 설치하고, 주제도 팩키지 <code>tmap</code> 도 불러온다.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#install.packages(&quot;devtools&quot;)  # 한번 설치한 경우에는 다시 설치할 필요 없습니다.</span>
+<span class="co">#devtools::install_github(&quot;cardiomoon/Kormaps&quot;)</span>
+<span class="kw">library</span>(Kormaps)
+<span class="kw">library</span>(tmap)
+<span class="kw">library</span>(raster)</code></pre></div>
+<p>2010년 시/도, 시/군/구, 읍/면/동 3단계 <code>Kormaps</code> 팩키지에 내장된 행정구역지도는 다음과 같다.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">p1 &lt;-<span class="st"> </span><span class="kw">qtm</span>(kormap1)
+p2 &lt;-<span class="st"> </span><span class="kw">qtm</span>(kormap2)
+p3 &lt;-<span class="st"> </span><span class="kw">qtm</span>(kormap3)
+
+<span class="kw">multiplot</span>(p1, p2, p3, <span class="dt">cols =</span> <span class="dv">3</span>)</code></pre></div>
+<p><img src="fig/unnamed-chunk-3-1.png" title="plot of chunk unnamed-chunk-3" alt="plot of chunk unnamed-chunk-3" style="display: block; margin: auto;" /></p>
+<p><code>submap()</code> 함수를 사용하여 대한민국 특정 지역을 뽑아내서 별도로 지리정보를 시각화 할 수 있다.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">daejeon.lvl<span class="fl">.3</span> &lt;-<span class="st">  </span><span class="kw">submap</span>(korpopmap3, <span class="kw">enc2utf8</span>(<span class="st">&quot;대전&quot;</span>))
+<span class="kw">qtm</span>(daejeon.lvl<span class="fl">.3</span>,<span class="st">&quot;가구_계_가구&quot;</span>)+<span class="kw">tm_layout</span>(<span class="dt">fontfamily=</span><span class="st">&quot;AppleGothic&quot;</span>)</code></pre></div>
+<p><img src="fig/unnamed-chunk-4-1.png" title="plot of chunk unnamed-chunk-4" alt="plot of chunk unnamed-chunk-4" style="display: block; margin: auto;" /></p>
+<p>참고, <code>names(korpopmap1@data)</code> 명령어를 통해서 인구총조사(2010년)에 포함된 데이터도 확인할 수 있다.</p>
+<h3 id="kormaps-leaflet-팩키지-활용-지리정보-시각화-kormaps-02">2. <code>Kormaps</code>, <code>leaflet</code> 팩키지 활용 지리정보 시각화 <a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a></h3>
+<p><a href="https://rstudio.github.io/leaflet/">leaflet</a> 팩키지는 인터랙티브 지도로 가장 인기있는 오픈소스 자바스크립트 라이브러리로 <a href="http://www.nytimes.com/projects/elections/2013/nyc-primary/mayor/map.html">뉴욕타임즈</a>, <a href="http://www.washingtonpost.com/sf/local/2013/11/09/washington-a-world-apart/">워싱턴포스트</a>, <a href="https://github.com/blog/1528-there-s-a-map-for-that">GitHub</a>, <a href="https://www.flickr.com/map">플리커</a> 같은 국내외 유명 웹사이트에서 사용되고 있다.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(leaflet)
+blue_palette &lt;-<span class="st"> </span><span class="kw">colorNumeric</span>(<span class="dt">palette=</span><span class="st">&quot;Blues&quot;</span>,<span class="dt">domain=</span>korpopmap3$가구_계_가구)
+households &lt;-<span class="st"> </span><span class="kw">paste0</span>(korpopmap3@data$name,<span class="st">&quot;: &quot;</span>,korpopmap3@data$가구_계_가구)
+
+<span class="kw">leaflet</span>(korpopmap3) %&gt;%
+<span class="st">  </span><span class="kw">addTiles</span>() %&gt;%
+<span class="st">  </span><span class="kw">addPolygons</span>(<span class="dt">stroke=</span><span class="ot">TRUE</span>, 
+              <span class="dt">smoothFactor =</span> <span class="fl">0.2</span>,
+              <span class="dt">fillOpacity =</span> .<span class="dv">8</span>, 
+              <span class="dt">popup=</span>households,
+              <span class="dt">color=</span> ~<span class="kw">blue_palette</span>(korpopmap3@data$가구_계_가구))</code></pre></div>
+<pre class="output"><code>FALSE Error in html_screenshot(x): Please install the webshot package (if not on CRAN, try devtools::install_github(&quot;wch/webshot&quot;))
+</code></pre>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p><a href="http://web-r.org/webrboard/6477">Kormaps 패키지를 이용한 단계구분도 쉽게 그리기(1)</a><a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p><a href="http://rpubs.com/cardiomoon/159305">Kormaps 패키지를 이용한 단계구분도 쉽게 그리기(2)</a><a href="#fnref2">↩</a></p></li>
+</ol>
+</div>
+        </div>
+      </div>
+      </article>
+      <div class="footer">
+        <a class="label swc-blue-bg" href="http://software-carpentry.org">Software Carpentry</a>
+        <a class="label swc-blue-bg" href="https://github.com/swcarpentry/lesson-template">Source</a>
+        <a class="label swc-blue-bg" href="mailto:admin@software-carpentry.org">Contact</a>
+        <a class="label swc-blue-bg" href="LICENSE.html">License</a>
+      </div>
+    </div>
+    <!-- Javascript placed at the end of the document so the pages load faster -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="css/bootstrap/bootstrap-js/bootstrap.js"></script>
+    <script src='https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>
+  </body>
+</html>
