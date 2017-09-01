@@ -1,6 +1,6 @@
 ---
 layout: page
-title: 데이터 과학을 위한 공간통계
+title: 공간통계를 위한 데이터 과학
 ---
 
 <img src="fig/ct-unplugged-4th-paradigm-korea.png" width="57%" />
@@ -23,6 +23,8 @@ title: 데이터 과학을 위한 공간통계
     - [.shp 지도 일부 추출](geo-info-shapefile.html)
     - [IP 주소 지리정보 시각화](geo-info-ip-address.html)
     - [제18대 대통령선거](geo-18-president.html)
+- 물류 
+    - [R 연습문제 - 지도](geo-r-exercise.html)
 
 ### xwMOOC 오픈 교재
 
