@@ -25,6 +25,7 @@ title: 공간통계를 위한 데이터 과학
     - [제18대 대통령선거](geo-18-president.html)
 - 물류 
     - [R 연습문제 - 지도](geo-r-exercise.html)
+    - [GPS 데이터 이동경로 시각화](geo-gps-map.html)
 
 ### xwMOOC 오픈 교재
 

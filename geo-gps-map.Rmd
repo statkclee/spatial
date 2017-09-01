@@ -1,0 +1,174 @@
+---
+layout: page
+title: 공간통계를 위한 데이터 과학
+subtitle: GPS 데이터 이동경로 시각화
+output:
+  html_document: 
+    keep_md: yes
+    toc: yes
+  pdf_document:
+    latex_engine: xelatex
+mainfont: NanumGothic
+---
+ 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE, quietly=TRUE)
+
+library(XML)
+library(OpenStreetMap)
+library(tidyverse)
+library(lubridate)
+library(raster)
+library(ggmap)
+library(hrbrthemes)
+library(extrafont)
+loadfonts()
+
+```
+
+## 1. GPS 이동경로 시각화 [^gps-xml-base-r]
+
+[^gps-xml-base-r]: [Stay on track: Plotting GPS tracks with R](http://rcrastinate.blogspot.kr/2014/09/stay-on-track-plotting-gps-tracks-with-r.html)
+
+GSP 데이터(`GPX` 포맷)를 R `XML` 팩키지를 통해 불러 들이고 나서 이를 시각화한다.
+
+## 2. 데이터 가져오기
+
+[http://www.wolferonline.de/uploads/run.gpx](http://www.wolferonline.de/uploads/run.gpx) 웹사이트에 독일 슈트트가르트 
+GPS 데이터가 있어 이를 `download.file()` 함수를 사용해서 "data/run.gpx" 디렉토리에 파일로 저장한다.
+
+XML 팩키지 `htmlTreeParse` 함수를 사용하여 파싱한 후에 해발고도(`elevations`), 시간(`times`), 좌표(`coords`) 정보를 추출한다.
+그리고 나서 분석가능한 형태인 데이터프레임으로 변환시킨다.
+
+``` {r gps-data}
+# 0. 환경설정 -----------------------------
+# library(XML)
+# library(OpenStreetMap)
+# library(tidyverse)
+# library(lubridate)
+# library(raster)
+# library(ggmap)
+# library(hrbrthemes)
+# library(extrafont)
+# loadfonts()
+
+# 1. 데이터 가져오기 ----------------------
+
+download.file("http://www.wolferonline.de/uploads/run.gpx", "data/run.gpx")
+
+pfile <- htmlTreeParse("data/run.gpx", error = function (...) {}, useInternalNodes = TRUE)
+
+# 2. 데이터 전처리 -------------------------
+# elevation, times, coordinate 추출
+elevations <- as.numeric(xpathSApply(pfile, path = "//trkpt/ele", xmlValue))
+times <- xpathSApply(pfile, path = "//trkpt/time", xmlValue)
+coords <- xpathSApply(pfile, path = "//trkpt", xmlAttrs)
+
+# 좌표(coordinate)에서 위경도 추출
+lats <- as.numeric(coords["lat",])
+lons <- as.numeric(coords["lon",])
+
+# 데이터프레임 변환
+geo_df <- data.frame(lat = lats, lon = lons, ele = elevations, time = times)
+rm(list=c("elevations", "lats", "lons", "pfile", "times", "coords"))
+
+geo_df %>% 
+  DT::datatable()
+```
+
+## 3. 거리 및 시간 계산을 위한 데이터 변환
+
+GPS 찍힌 정보 뿐만 아니라 해발고도와 이동 지점을 바탕으로 이동거리와 속도를 추정한다.
+
+``` {r gps-distance-speed}
+# 3. 거리 및 시간 계산 ----------------------------------
+geo_df <- geo_df %>%  mutate(lat.p1 = lead(lat, 1),
+                             lon.p1 = lead(lon, 1),
+                             time = lubridate::ymd_hms(as.character(time)))
+    
+
+geo_df$dist.to.prev <- apply(geo_df, 1, FUN = function (row) {
+    raster::pointDistance(c(as.numeric(row["lat.p1"]),
+                    as.numeric(row["lon.p1"])),
+                  c(as.numeric(row["lat"]), as.numeric(row["lon"])),
+                  lonlat = TRUE)
+})
+
+
+geo_df <- geo_df %>%  mutate(time.p1 = lead(time, 1),
+                             time.diff.to.prev = as.numeric(time.p1 - time),
+                             speed.m.per.sec = dist.to.prev / time.diff.to.prev,
+                             speed.km.per.h = speed.m.per.sec * 3.6,
+                             speed.km.per.h = ifelse(is.na(speed.km.per.h), 0, speed.km.per.h),
+                             lowess.speed = lowess(speed.km.per.h, f = 0.2)$y,
+                             lowess.ele = lowess(ele, f = 0.2)$y)
+```
+
+## 4. GPS 정보 시각화
+
+### 4.1. 해발고도 변화
+
+``` {r gps-viz-elevation}
+# 4. 시각화 ------------------------------------------------------
+## 4.1. 해발 고도 ---------------
+ggplot(geo_df, aes(y=ele, x=seq_along(ele))) +
+    geom_line() +
+    geom_line(aes(y=lowess.ele, x=seq_along(lowess.ele)), color="blue", size=1.5) +
+    theme_ipsum(base_family = "NanumGothic") +
+    labs(x="GPS 관측점", y="해발높이(elevation)")
+```
+
+### 4.2. 이동속도 변화
+
+``` {r gps-viz-speed}
+## 4.2. 속도 ---------------
+ggplot(geo_df, aes(y=speed.km.per.h, x=seq_along(speed.km.per.h))) +
+    geom_line() +
+    geom_hline(yintercept = mean(geo_df$speed.km.per.h), lty=2) + 
+    geom_line(aes(y=lowess.speed, x=seq_along(lowess.speed)), color="violet", size=1.5) +
+    theme_ipsum(base_family = "NanumGothic") +
+    labs(x="GPS 관측점", y="속도(speed") 
+```
+
+### 4.3. 이동 위치 시각화 - 지도 없음
+
+``` {r gps-viz-lonlat}
+## 4.3. 지도 없는 위경도 표시 ---------------
+ggplot(geo_df, aes(x=lon, y=lat)) +
+    geom_point() +
+    theme_ipsum(base_family = "NanumGothic") +
+    labs(x="경도(Longitude)", y="위도(Latitude)") 
+```
+
+## 5. GPS 데이터 지도 매핑
+
+### 5.1. OSM 지도 
+
+``` {r gps-viz-osm}
+# 5. 지도 --------------------------------------------------------
+## 5.1. Open Street Map ------------------------------------------
+map <- openmap(as.numeric(c(max(geo_df$lat), min(geo_df$lon))),
+               as.numeric(c(min(geo_df$lat), max(geo_df$lon))), type = "skobbler")
+
+transmap <- openproj(map, projection = "+proj=longlat")
+
+plot(transmap, raster=TRUE)
+lines(geo_df$lon, geo_df$lat, type = "l", col = scales::alpha("red", .5), lwd = 5)
+```
+
+### 5.2. `ggmap` 지도 
+
+``` {r gps-viz-ggmap}
+## 5.2. ggmap ------------------------------------------
+
+revgeocode(c(mean(geo_df$lon), mean(geo_df$lat)), output="address")
+
+map <- get_map(c(mean(geo_df$lon), mean(geo_df$lat)), 
+               zoom = 14, maptype='roadmap', source='google', color='color')
+
+ggmap(map)+
+    geom_segment(
+        aes(x = lon, y = lat, xend = lon.p1, yend = lat.p1),
+        colour ="red", size = 2, data = geo_df
+    )
+```
