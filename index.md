@@ -28,8 +28,7 @@ title: 공간통계를 위한 데이터 과학
     - [GPS 데이터 이동경로 시각화](geo-gps-map.html)
 - tidyverse 공간 데이터 분석 
     - [제6회 지방선거 - 광역단체장](spatial-jibang-sido.html)
-    - [GPS 데이터 이동경로 시각화](geo-gps-map.html)
-
+    - [제6회 지방선거 - 기초자치단체장](spatial-jibang-govenment.html)
 
 
 ### xwMOOC 오픈 교재

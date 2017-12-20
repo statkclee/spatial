@@ -1,0 +1,309 @@
+---
+layout: page
+title: 공간통계를 위한 데이터 과학
+subtitle: 제6회 지방선거 - 기초자치단체장
+date: "`r Sys.Date()`"
+output:
+  html_document: 
+    toc: yes
+    highlight: tango
+  pdf_document:
+    latex_engine: xelatex
+mainfont: NanumGothic
+---
+ 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE, quietly=TRUE)
+
+library(tidyverse)
+library(readxl)
+library(stringr)
+library(ggplot2)
+library(sf)
+library(pryr)
+library(rvest)
+library(ggpubr)
+library(extrafont)
+loadfonts()
+library(tmap)
+
+```
+
+## 1. 기초자치단체장 지방선거 시각화를 위한 사전 준비 {#pre-condition-for-spatial-analysis}
+
+현시점 대한민국 제7회 지방 선거가 얼마 남지 않았다. 제6회 지방선거결과를 최근에 발전된 공간데이터 분석 기법을 적용하여 데이터를 분석해 보자.
+최근 tidyverse 데이터 분석 체계에 맞춰 공간지리정보를 분석하는데 사전 준비가 필요하다.
+
+1. 지도 파일: `.shp` 파일
+1. 행정동 코드: 엑셀 파일
+1. 광역단체장 선거 데이터: 위키백과 사전 [대한민국_제6회_지방_선거 - 기초자치단체장](https://ko.wikipedia.org/wiki/%EB%8C%80%ED%95%9C%EB%AF%BC%EA%B5%AD_%EC%A0%9C6%ED%9A%8C_%EC%A7%80%EB%B0%A9_%EC%84%A0%EA%B1%B0_%EA%B8%B0%EC%B4%88%EC%9E%90%EC%B9%98%EB%8B%A8%EC%B2%B4%EC%9E%A5)
+
+<img src="fig/tidyverse-sf-jibang-sido.png" alt="제6회 지방선거 광역단체장" width="77%" />
+
+지리데이터도 tidyverse 체계에 맞춰 데이터 분석 전략을 수립했으니 이제 앞서 정의한 데이터를 구해보자.
+
+1. 지도 파일: [대한민국 최신 행정구역(SHP) 다운로드 - 시군구](http://www.gisdeveloper.co.kr/?p=2332)
+1. 행정동 코드: [행정표준코드관리시스템](https://www.code.go.kr/jsp/index.jsp) 접속하여 상단 **자주묻는질문** "행정동코드(전체) 및 법정동·행정동코드 매핑 자료 받는 방법은 어떻게 되나요?"을 참조
+    - [주민등록 및 인감 - 주민등록주소코드 변경내역 최신일자](http://www.mois.go.kr/frt/bbs/type001/commonSelectBoardList.do?bbsId=BBSMSTR_000000000052) 압축파일 풀어 엑셀파일 데이터.
+1. 광역단체장 선거 데이터: 위키백과 사전 [대한민국_제6회_지방_선거 - 기초자치단체장](https://ko.wikipedia.org/wiki/%EB%8C%80%ED%95%9C%EB%AF%BC%EA%B5%AD_%EC%A0%9C6%ED%9A%8C_%EC%A7%80%EB%B0%A9_%EC%84%A0%EA%B1%B0_%EA%B8%B0%EC%B4%88%EC%9E%90%EC%B9%98%EB%8B%A8%EC%B2%B4%EC%9E%A5)
+    - `rvest` 팩키지를 통해 데이터를 긁어온다.
+
+## 2. 기초자치단체장 선거결과 공간정보 시각화 {#jibang-vote-spatial-data-visualization}
+
+### 2.1. 팩키지 설치 {#jibang-vote-spatial-data-visualization-pkg}
+
+`sf` 팩키지가 핵심적인 역할을 수행한다. 따라서 `devtools::install_github("r-spatial/sf")` 명령어를 통해 팩키지를 설치한다.
+**GDAL**이 설치되지 않아 `sf` 팩키지가 설치되지 않는 경우 다음 유튜브 동영상을 참조하여 깔끔히 설치를 마무리한다.
+
+<iframe width="300" height="180" src="https://www.youtube.com/embed/hQt9tmfl-x8" frameborder="0" gesture="media" allow="encrypted-media" allowfullscreen></iframe>
+
+`ggplot`의 `geom_sf()`가 설치가 되지 않는 경우 `devtools::install_github("tidyverse/ggplot2", force=TRUE)` 설치해 보는 것도 문제점을 해결해 나가는 방법이 된다.
+
+``` {r jibang-data-visualization-setup}
+# 0. 환경설정 ---------
+# library(tidyverse)
+# library(readxl)
+# library(stringr)
+# library(ggplot2)
+# library(sf)
+# library(pryr)
+# library(rvest)
+# library(ggpubr)
+# library(extrafont)
+# loadfonts()
+# library(tmap)
+```
+
+### 2.2. 데이터 가져오기 {#jibang-vote-spatial-data-visualization-data}
+
+지도 데이터를 비롯한 행정코드, 광역단체장 선거결과 데이터를 순차적으로 불러 읽어 드린다.
+데이터를 읽어오는 과정에서 필요한 데이터 전처리 작업도 함께 수행한다.
+
+``` {r jibang-data-visualization-setup-data}
+# 1. 데이터 가져오기 ----------------
+## 1.1. 지도 데이터 다운로드 --------
+
+# url <- "http://www.gisdeveloper.co.kr/download/admin_shp/CTPRVN_201703.zip"
+# download.file(url, destfile = "data/sido.zip")
+# unzip(zipfile = "data/sido.zip", exdir = "data/sido")
+
+## 1.2. shp 파일 불러오기 --------
+sigungu_shp <- st_read("data/sigungu/TL_SCCO_SIG.shp")
+sigungu_shp$SIG_KOR_NM <- iconv(sigungu_shp$SIG_KOR_NM, from = "CP949", to = "UTF-8", sub = NA, mark = TRUE, toRaw = FALSE)
+
+head(sigungu_shp)
+
+## 1.3. 시군 코드 --------
+sido_cd_df <- read_excel("data/jscode/jscode20171218/KIKcd_H.20171218.xlsx", sheet="KIKcd_H")
+
+sigungu_cd_df <- sido_cd_df %>% 
+    mutate(CTPRVN_CD = str_sub(행정동코드, 1,5)) %>% 
+    group_by(CTPRVN_CD) %>% 
+    summarise(시도명 = first(시도명),
+              시군구명 = first(시군구명)) %>% 
+    mutate(시군구명 = ifelse(is.na(시군구명), 시도명, 시군구명))
+
+## 1.4. 지방자치단체장 --------
+
+Sys.setlocale("LC_ALL", "English")
+
+url <- "https://ko.wikipedia.org/wiki/%EB%8C%80%ED%95%9C%EB%AF%BC%EA%B5%AD_%EC%A0%9C6%ED%9A%8C_%EC%A7%80%EB%B0%A9_%EC%84%A0%EA%B1%B0_%EA%B8%B0%EC%B4%88%EC%9E%90%EC%B9%98%EB%8B%A8%EC%B2%B4%EC%9E%A5" 
+
+seoul_df <- url %>%
+    read_html() %>%
+    html_nodes(xpath='//*[@id="mw-content-text"]/div/table[4]') %>%
+    html_table(fill = TRUE) %>% 
+    .[[1]]
+
+incheon_df <- url %>%
+    read_html() %>%
+    html_nodes(xpath='//*[@id="mw-content-text"]/div/table[6]') %>%
+    html_table(fill = TRUE) %>% 
+    .[[1]]
+
+gg_df <- url %>%
+    read_html() %>%
+    html_nodes(xpath='//*[@id="mw-content-text"]/div/table[8]') %>%
+    html_table(fill = TRUE) %>% 
+    .[[1]]
+
+kangwon_df <- url %>%
+    read_html() %>%
+    html_nodes(xpath='//*[@id="mw-content-text"]/div/table[9]') %>%
+    html_table(fill = TRUE) %>% 
+    .[[1]]
+
+daejeon_df <- url %>%
+    read_html() %>%
+    html_nodes(xpath='//*[@id="mw-content-text"]/div/table[11]') %>%
+    html_table(fill = TRUE) %>% 
+    .[[1]]
+
+choongnam_df <- url %>%
+    read_html() %>%
+    html_nodes(xpath='//*[@id="mw-content-text"]/div/table[13]') %>%
+    html_table(fill = TRUE) %>% 
+    .[[1]]
+
+choongbook_df <- url %>%
+    read_html() %>%
+    html_nodes(xpath='//*[@id="mw-content-text"]/div/table[15]') %>%
+    html_table(fill = TRUE) %>% 
+    .[[1]]
+
+kwangju_df <- url %>%
+    read_html() %>%
+    html_nodes(xpath='//*[@id="mw-content-text"]/div/table[16]') %>%
+    html_table(fill = TRUE) %>% 
+    .[[1]]
+
+cheonnam_df <- url %>%
+    read_html() %>%
+    html_nodes(xpath='//*[@id="mw-content-text"]/div/table[17]') %>%
+    html_table(fill = TRUE) %>% 
+    .[[1]]
+
+cheonbook_df <- url %>%
+    read_html() %>%
+    html_nodes(xpath='//*[@id="mw-content-text"]/div/table[18]') %>%
+    html_table(fill = TRUE) %>% 
+    .[[1]]
+
+daegu_df <- url %>%
+    read_html() %>%
+    html_nodes(xpath='//*[@id="mw-content-text"]/div/table[19]') %>%
+    html_table(fill = TRUE) %>% 
+    .[[1]]
+
+pusan_df <- url %>%
+    read_html() %>%
+    html_nodes(xpath='//*[@id="mw-content-text"]/div/table[20]') %>%
+    html_table(fill = TRUE) %>% 
+    .[[1]]
+
+woolsan_df <- url %>%
+    read_html() %>%
+    html_nodes(xpath='//*[@id="mw-content-text"]/div/table[22]') %>%
+    html_table(fill = TRUE) %>% 
+    .[[1]]
+
+kyungnam_df <- url %>%
+    read_html() %>%
+    html_nodes(xpath='//*[@id="mw-content-text"]/div/table[23]') %>%
+    html_table(fill = TRUE) %>% 
+    .[[1]]
+
+kyungbook_df <- url %>%
+    read_html() %>%
+    html_nodes(xpath='//*[@id="mw-content-text"]/div/table[24]') %>%
+    html_table(fill = TRUE) %>% 
+    .[[1]]
+
+Sys.setlocale("LC_ALL", "Korean")
+
+## 1.5. 데이터 병합 -------------
+
+gov_dat <- bind_rows(cheonbook_df, cheonnam_df) %>% 
+    bind_rows(choongbook_df) %>% 
+    bind_rows(choongnam_df) %>% 
+    bind_rows(daegu_df) %>% 
+    bind_rows(daejeon_df) %>% 
+    bind_rows(gg_df) %>% 
+    bind_rows(incheon_df) %>% 
+    bind_rows(kangwon_df) %>% 
+    bind_rows(kwangju_df) %>% 
+    bind_rows(kyungbook_df) %>% 
+    bind_rows(kyungnam_df) %>% 
+    bind_rows(pusan_df) %>% 
+    bind_rows(seoul_df) %>% 
+    bind_rows(woolsan_df)
+
+
+gov_df <- gov_dat %>% as_tibble() %>% 
+    mutate(득표수 = as.numeric(str_replace_all(득표수, ",", ""))) %>% 
+    separate(지역, into=c("시도", "시군구"), remove=TRUE) %>% 
+    mutate(당선수 = case_when(
+        str_detect(비고, "재선") ~ "재선",
+        str_detect(비고, "3선") ~ "3선",
+        TRUE ~ "초선"))  %>% 
+    mutate(무투표 = case_when(
+        str_detect(비고, "무투표") ~ "무투표",
+        TRUE ~ "투표")) %>% 
+    rename(시도명 = 시도,
+           시군구명 = 시군구)
+
+gov_df <- gov_df %>% mutate(시도명 = case_when(
+    str_detect(시도명, "강원도")    ~  "강원도",
+    str_detect(시도명, "경기도")    ~  "경기도",
+    str_detect(시도명, "경상남도")   ~  "경상남도",
+    str_detect(시도명, "경상북도")   ~  "경상북도",
+    str_detect(시도명, "광주")  ~  "광주광역시",
+    str_detect(시도명, "대구")  ~  "대구광역시",
+    str_detect(시도명, "대전")  ~  "대전광역시",
+    str_detect(시도명, "부산")  ~  "부산광역시",
+    str_detect(시도명, "서울")  ~  "서울특별시",
+    str_detect(시도명, "울산")  ~  "울산광역시",
+    str_detect(시도명, "인천")  ~  "인천광역시",
+    str_detect(시도명, "전라남도")   ~  "전라남도",
+    str_detect(시도명, "전라북도")   ~  "전라북도",
+    str_detect(시도명, "충청남도")   ~  "충청남도",
+    str_detect(시도명, "충청북도")   ~  "충청북도"))
+
+```
+
+### 2.3. 데이터 병합 {#jibang-vote-spatial-data-visualization-data-join}
+
+먼저 행정코드와 선거결과를 병합하고 나서, 그 다음으로 `.shp` 지도파일도 병합한다.
+
+``` {r jibang-data-visualization-setup-data-join}
+# 2. 데이터 병합 --------
+## 2.1. 행정코드와 선거결과 병합
+jibang_gov_df <- inner_join(sigungu_cd_df, gov_df, by = c("시도명", "시군구명"))
+jibang_gov_df <- jibang_gov_df %>% 
+    select(CTPRVN_CD, 시도명, 시군구명, 정당, 후보,득표수, 득표율, 당선수, 무투표)
+
+## 2.2. 행정코드와 연결된 선거결과를 지도와 연결
+
+sigungu_shp <- left_join(sigungu_shp, jibang_gov_df, by=c("SIG_CD" = "CTPRVN_CD"))
+
+```
+
+
+### 2.4. 정적 시각화 {#jibang-vote-spatial-data-visualization-static}
+
+`st_simplify()` 함수를 통해 빠른 시각화를 위해서 파일 크기를 줄이고 나서,
+`ggplot` 작업흐름에 맞춰 지방선거 결과를 시각화 한다.
+
+``` {r jibang-data-visualization-viz-static}
+# 3. 지리정보 시각화 --------
+## 3.1. SHP 파일 크기 줄이기 --------
+sigungu_simp_shp <- st_simplify(sigungu_shp, dTolerance = 100)
+
+## 3.2. 정적 그래프 --------
+ggplot(data=sigungu_simp_shp, aes(fill=득표수)) +
+    geom_sf() +
+    theme_pubr(base_family="NanumGothic") +
+    labs(title="제6회 지방선거 - 기초자치단체장") + 
+    theme(legend.position = "right") +
+    scale_fill_gradient(low = "wheat1", high = "red", name = "득표수", labels = scales::comma)
+
+```
+
+### 2.5. 동적 시각화 {#jibang-vote-spatial-data-visualization-dynamic}
+
+`tmap` 팩키지를 활용하여 유사한 방식으로 동적 시각화 작업을 수행한다. 
+
+``` {r jibang-data-visualization-viz-dynamic}
+## 3.3. 동적 그래프 --------
+tmap_mode("view")
+tm_shape(sigungu_simp_shp) +
+    # tm_polygons(col = "득표수") +
+    tm_borders() +
+    tm_fill("득표수", 
+            style = "fixed",
+            breaks = c(0, 50000, 100000, 150000, Inf),
+            title      = c("시도명", "시군구명", "정당", "득표수", "득표율", "당선수"),
+            popup.vars = c("시도명", "시군구명", "정당", "득표수", "득표율", "당선수"))
+```
+
+
