@@ -23,6 +23,7 @@ title: 공간통계를 위한 데이터 과학
     - [.shp 지도 일부 추출](geo-info-shapefile.html)
     - [IP 주소 지리정보 시각화](geo-info-ip-address.html)
     - [제18대 대통령선거](geo-18-president.html)
+    - [지진과 원전 - sf와 데이터프레임의 만남](geo-sf-dataframe.html)
 - 물류 
     - [R 연습문제 - 지도](geo-r-exercise.html)
     - [GPS 데이터 이동경로 시각화](geo-gps-map.html)
