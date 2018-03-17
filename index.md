@@ -31,6 +31,7 @@ title: 공간통계를 위한 데이터 과학
     - [제6회 지방선거 - 광역단체장](spatial-jibang-sido.html)
     - [제6회 지방선거 - 기초자치단체장](spatial-jibang-govenment.html)
     - [경기도 대통령선거 - `geofacet`](spatial-jibang-geofacet.html)
+    - [시도별 실업률 추세 - `geofacet`](spatial-jibang-unemp.html)
 
 
 ### xwMOOC 오픈 교재
