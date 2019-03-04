@@ -161,29 +161,69 @@ kangwonMap + geom_point(data = kangwon.loc.dplyr, aes(lon,lat), size = 2, colour
 ```
 
 
-# 다음 지도 API {#kakao-map-api}
+# 다음 지도 API [^kevin-daum-map-api] {#kakao-map-api}
+
+[^kevin-daum-map-api]: [Dr.Kevin (02/17/2019), "다음 지도 Api를 활용한 지도 시각화"](https://mrkevinna.github.io/%EB%8B%A4%EC%9D%8C-%EC%A7%80%EB%8F%84-API%EB%A5%BC-%ED%99%9C%EC%9A%A9%ED%95%9C-%EC%A7%80%EB%8F%84-%EC%8B%9C%EA%B0%81%ED%99%94/)
 
 구글 공간정보서비스가 위세를 떨치는 기간에 [다음 지도 API](http://apis.map.daum.net/) 사용법과 사용량 등 개발자 관점에서 나름 쓸만한 형태로 개선되었다.
 
-```{r daum-api-key, eval=FALSE}
+## 헬로우 월드 {#kakao-map-api-hello-world}
+
+`C:\Program Files\R\R-3.5.2\etc` 디렉토리 `Rprofile.site` 파일에 [카카오 개발자센터](https://developers.kakao.com/) 앱개발에 사용할 API 키를 `DAUM_MAP_API_KEY` 변수에 저장시킨다.
+재미있는 것은 `Authorization`에서 `"KakaoAK "`를 꼭 앞에 붙여야함으로 `paste0()` 함수로 결합시켜 던진다.  
+
+삼정KPMG주소를 지도위에 표시하는 것을 목표로 먼저 삼정KPMG 주소를 던져서 위도경도를 받아내는 헬로월드 코드를 작성해본다. 
+
+
+```{r daum-api-key}
 library(httr)
 library(tidyverse)
 library(jsonlite)
 
 # 주소를 지정합니다. 
-addr <- '서울특별시 영등포구 의사당대로 82' 
+kpmg_addr <- '서울특별시 강남구 역삼동 737' 
 
 # HTTP 요청을 실행합니다. 
-res <- GET(url = 'https://dapi.kakao.com/v2/local/search/address.json',
-           query = list(query = addr),
-           add_headers(Authorization = Sys.getenv('DAUM_MAP_API_KEY')))
+kpmg_res <- GET(url = 'https://dapi.kakao.com/v2/local/search/address.json',
+           query = list(query = kpmg_addr),
+           add_headers(Authorization = paste0("KakaoAK ", DAUM_MAP_API_KEY)))
 
-# HTTP 응답 결과를 확인합니다. 
-print(x = res)
+# KPMG 지리정보 데이터프레임
+kpmg_list <- kpmg_res %>% 
+  content(as = 'text') %>% 
+  fromJSON()
 
+## 도로명주소
+kpmg_list$documents$road_address %>% 
+  select(address_name, building_name, x,y)
 
-
+## 지명주소
+kpmg_list$documents$address %>% 
+  select(address_name, zip_code, x,y)
 ```
 
 
+## 위도경도 &rarr; 지도 시각화 [^daum-api-crs] {#kakao-map-api-hello-world-map}
+
+[^daum-api-crs]: [다음 지도 좌표 바꾸는거 문의드립니다](https://devtalk.kakao.com/t/topic/36830/4)
+
+다음 지도 API는 일반적인 TM 좌표계 기반으로 TM128에 대응되는 좌표계는 API에서 지원하지 않고 있다.
+지리정보 시각화를 위해서 먼저 데이터프레임 위도경도 정보를 지도상에 표시할 수 있도록 `sf` 팩키지 `st_as_sf()` 함수로 자료형을 변환시킨다. 그리고 나서 `mapview()` 함수로 시각화를 완성한다.
+
+```{r daum-api-key-viz}
+library(sf)
+library(mapview)
+
+# 3. 데이터프레임을 지도객체로 변환 ------
+kpmg_df <- kpmg_list$documents$road_address %>% 
+  select(address_name, building_name, lon=x, lat=y) %>% 
+  mutate(lon = as.numeric(lon),
+         lat = as.numeric(lat))
+  
+kpmg_sf <- st_as_sf(kpmg_df, 
+                  coords = c("lon", "lat"),
+                  crs = 4326)
+
+mapview(kpmg_sf, hide =TRUE)
+```
 
