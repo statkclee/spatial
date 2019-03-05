@@ -1,16 +1,35 @@
 ---
 layout: page
-title: 데이터 과학
-subtitle: 우편번호 지리정보 시각화
+title: "공간통계를 위한 데이터 사이언스"
+subtitle: "우편번호/주소 지리정보 시각화"
+author:
+    name: xwMOOC
+date: "`r Sys.Date()`"
+output:
+  html_document: 
+    toc: yes
+    toc_float: true
+    highlight: tango
+    code_folding: hide
+    number_section: true
+    self_contained: true
+editor_options: 
+  chunk_output_type: console
 ---
 
-> ## 학습 목표 {.objectives}
->
-> * 대한민국 우편번호를 행정표준코드관리시스템에 접속해서 다운로드한다.
-> * 데이터 정제과정을 통해 지리정보 시각화를 위한 데이터 품질을 높인다.
-> * 지리정보를 표식하는 가장 기본적인 작업흐름을 숙지한다.
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE,
+                      comment="", digits = 3, tidy = FALSE, prompt = FALSE, fig.align = 'center')
 
-### 우편번호가 담긴 지리정보 시각화
+```
+
+
+
+# 우편번호 지리정보 시각화 {#postcode-viz}
+
+대한민국 우편번호를 행정표준코드관리시스템에 접속해서 다운로드 한 후
+데이터 정제과정을 통해 지리정보 시각화를 위한 데이터 품질을 높인다.
+그리고 나서 지리정보를 표식하는 가장 기본적인 작업흐름을 숙지해보자.
 
 [행정표준코드관리시스템](http://code.mogaha.go.kr)에서 우편번호를 다운로드 받는 경우 
 6자리 이전 우편번호를 습득하게 된다. 최신 5자리 우편번호는 [인터넷 우체국](http://www.epost.go.kr/search/zipcode/areacdAddressDown.jsp)
@@ -22,7 +41,7 @@ subtitle: 우편번호 지리정보 시각화
 `dplyr` 팩키지 `left_join()` 함수에 데이터를 병합하는데 키로 우편번호를 사용한다.
 
 지리정보 시각화를 위한 데이터에 주소정보가 결합되면, 다음 단계로
-깨끗한 주소정보를 `ggmap` 팩키지 `geocode()` 함수에 던져 위도와 경도 정보를 받아온다.
+깨끗한 주소정보를 `ggmap` 팩키지 `geocode()` 함수에 던져 위도와 경도 정보를 받아온 것이 기존 표준방식이었는데 구글이 공간정보서비스에 대해서 유료화 방침을 천명한 이후 새로운 대안을 찾는 움직임이 활발하다.
 
 위도, 경도 정보가 깨끗한 주소정보와 함께 결합되면 `leaflet` 팩키지 지리정보시각화 함수를 사용하여 
 시각화한다. 단순히 지리정보를 표식하여 지도에 찍고, 특정 표식을 클릭하게 되면 주소를 표식한다.
@@ -30,17 +49,25 @@ subtitle: 우편번호 지리정보 시각화
 
 <img src="fig/geo-postcode.png" alt="지리정보 시각화" width="50%" />
 
-> #### 사전준비 사항 {.prereq}
->
-> * 해당 우편번호가 담긴 데이터 : 예전 6자리 우편번호 혹은 최신 5자리 우편번호
-> * 우편번호 데이터 인코딩 현황 확인 : 윈도우 환경이라면 신경쓸 것 없다.
->      - 맥 혹은 리눅스를 사용하거나, `utf-8`을 기본 인코딩으로 사용하는 경우 인코딩을 일치시킨다.
->      - `CP949`, `EUC-KR`로 되어있는 경우 `utf-8`으로 변경한다.
->      - RStudio 및 Hadley Wickham이 작성한 대부분의 팩키지는 `utf-8`을 기본 인코딩으로 사용한다.
->      - PC 플랫폼이 아닌 웹기반으로 작업하는 경우 `utf-8`으로 인코딩 표준을 준수한다.
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 10px;}
+</style>
+<div class = "blue">
+
+**사전준비 사항**
+
+- 해당 우편번호가 담긴 데이터 : 예전 6자리 우편번호 혹은 최신 5자리 우편번호
+- 우편번호 데이터 인코딩 현황 확인 : 윈도우 환경이라면 신경쓸 것 없다.
+    - 맥 혹은 리눅스를 사용하거나, `utf-8`을 기본 인코딩으로 사용하는 경우 인코딩을 일치시킨다.
+    - `CP949`, `EUC-KR`로 되어있는 경우 `utf-8`으로 변경한다.
+    - RStudio 및 Hadley Wickham이 작성한 대부분의 팩키지는 `utf-8`을 기본 인코딩으로 사용한다.
+    - PC 플랫폼이 아닌 웹기반으로 작업하는 경우 `utf-8`으로 인코딩 표준을 준수한다.
+    
+</div>
 
 
-~~~ {.r}
+
+```{r postcode-viz-example, eval=FALSE}
 ##==========================================================================
 ## 팩키지 및 우편번호 데이터 불러오기
 ##==========================================================================
@@ -84,7 +111,7 @@ addr.mst
 
 leaflet(data = addr.mst) %>% addTiles() %>%
   addMarkers(~lon, ~lat, popup = ~as.character(addr))
-~~~
+```
 
 `leaflet` 팩키지는 R에서 지리정보 시각화를 위한 자바스크립트를 사용할 수 있도록 만들어졌다.
 따라서 웹에서 자바스크립트로 코드 몇줄로 간단히 구현한 효과를 볼 수 있다.

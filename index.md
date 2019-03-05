@@ -16,8 +16,8 @@ title: 공간통계를 위한 데이터 과학
 
 - [공간 통계 - 지리정보](geo-info.html)
     - [주소와 위도경도](geo-info-lonlat.html)
+    - [우편번호/주소 지리정보 시각화](geo-info-postcode.html)    
     - [Kormaps, leaflet 지리정보 시각화 기초](geo-info-kormaps.html)
-    - [우편번호 지리정보 시각화](geo-info-postcode.html)
     - [단계구분도(choropleth) 지리정보 시각화](geo-info-choropleth.html)
     - [생활안전 - 보호관찰소와 범죄](geo-info-crime.html)     
     - [.shp 지도 일부 추출](geo-info-shapefile.html)
