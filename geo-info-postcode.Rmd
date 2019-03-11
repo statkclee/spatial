@@ -1,7 +1,7 @@
 ---
 layout: page
 title: "공간통계를 위한 데이터 사이언스"
-subtitle: "우편번호/주소 지리정보 시각화"
+subtitle: "우편번호/주소 지리정보 시각화 - `ggplot` + `ggmap`"
 author:
     name: xwMOOC
 date: "`r Sys.Date()`"
@@ -10,7 +10,7 @@ output:
     toc: yes
     toc_float: true
     highlight: tango
-    code_folding: hide
+    code_folding: show
     number_section: true
     self_contained: true
 editor_options: 
@@ -23,9 +23,147 @@ knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE,
 
 ```
 
+# `ggmap` 환경설정 [^geocoding-with-ggmap] {#ggmap-config}
+
+[^geocoding-with-ggmap]: [Peter Prevos (October 10, 2018), "Geocoding with ggmap and the Google API" 	](https://lucidmanager.org/geocoding-with-ggmap/)
 
 
-# 우편번호 지리정보 시각화 {#postcode-viz}
+Google API는 무료가 아니다. 구글 지도 API를 사용하려면 먼저 [Google Maps Pltaform - Get API Key](https://developers.google.com/maps/documentation/geocoding/get-api-key)를 참조하여 
+[Google Maps Platform 사용 설정](https://cloud.google.com/maps-platform/#get-started)을 따라야만 된다.
+신용카드도 등록하고 구글이 원하는 바를 모두 맞춰주면 API키가 발급된다. 월기준 40,000 호출횟수까지는 무료라고 한다. 그 이상을 넘어가면 호출 횟수당 0.005달러가 신용카드를 통해 청구된다. 따라서 API키가 외부에 노출되지 않도록 보안에 특별히 신경을 쓴다.
+
+
+API키를 발급받게 받아 다음 명령어를 실행시키면 `C:/Users/user/Documents/.Renviron` 파일에... 
+`GGMAP_GOOGLE_API_KEY=API키` 행이 추가된다. 따라서 다음부터는 자동으로 구글 지도 API를 사용할 수 있는 효과를 얻게 된다. 
+
+- `register_google(key = "API키", write = TRUE)`
+
+만약 `usethis::edit_r_environ()`을 사용하는 경우 `GGMAP_GOOGLE_API_KEY=API키` 행을 직접 추가해도 무방하다.
+그리고 추천하는 것은 `Maps Static API` 서비스를 제외한 나머지 서비스를 모두 비활성화(Disable) 시킨다. 설사 API키가 외부에 유출되더라도 피해를 최소화할 수 있다. 그리고 필요한 경우만 API를 활성화해서 사용한다. 예를 들어 `Geocoding API`를 사용해야만, 주소정보를 전달했을 때 위도와 경도 정보를 반환받아 시각화할 수 있게 된다.
+
+Google API 가격관련 자세한 사항은 다음 웹사이트를 참조한다.
+
+- [MAPS, ROUTES, PLACES의 가격 정책](https://cloud.google.com/maps-platform/pricing/sheet/)
+
+
+```{r ggmap-api-register}
+library(tidyverse)
+library(ggmap)
+
+# register_google(key = "API키", write = TRUE)
+```
+
+
+# `ggmap` 헬로월드 {#ggmap-config-hello-world}
+
+`ggmap` 팩키지 `geocode()` 함수에 주소를 던지게 되면 위경도를 반환하게 된다.
+이를 `get_map()` 함수에 적당한 `zoom = 13` 를 조절하게 되면 `ggmap()` 함수를 통해 경기도 수원시 경기도청이 위치한 곳의 지도를 받아낼 수 있다. 
+
+```{r ggmap-api-register-hello-world}
+(gg_locations <- c("경기도 수원시 팔달구 효원로 1 (매산로3가)") %>%
+    geocode())
+
+gg_map <- get_map(gg_locations, zoom = 13, scale = 1)
+
+ggmap(gg_map)
+```
+
+
+# 공공기관 지리정보 시각화 {#ggmap-config-address-public}
+
+## 공공기관 주소 데이터 {#ggmap-config-address}
+
+공공데이터포털, [일선행정기관 주소와 전화번호](https://www.data.go.kr/dataset/15008024/fileData.do)를 엑셀로 다운로드 받아 저장한 후에 `readxl` 팩키지로 불러와서 가장 먼저 나온 `검찰`이 65개로 적절한 숫자라 판단되어 주소 정보를 위도와 경도 정보로 바꾼 후에 시각화하는 사례를 실습해본다.
+
+
+```{r ggmap-get-data}
+library(readxl)
+addr_dat <- read_excel("data/일선_행정기관_주소__전화번호_2018년_11월_30일_기준_-최종.xlsx", sheet='Sheet')
+
+addr_dat %>% 
+  count(`유형_1`)
+```
+
+
+## 검찰주소 &rarr; 위경도 {#ggmap-address-lonlat}
+
+[일선행정기관 주소와 전화번호](https://www.data.go.kr/dataset/15008024/fileData.do)에서 "도로명주소"를 추출하여 `geocode()` 함수로 던져 위경도주소를 받아낸다.
+
+```{r ggmap-address-lonlat, eval=FALSE}
+names(addr_dat)  <- c("기관코드", "유형_1", "유형_2", "대표기관명", "전체기관명", 
+"최하위기관명", "대표전화번호", "새우편번호", "도로명주소", "비고")
+
+addr_df <- addr_dat %>% 
+  select(-`비고`) %>% 
+  filter(`유형_1` == "검찰") %>% 
+  mutate(`시도명` = str_extract(`도로명주소`, pattern="^([\\w]+)"))
+
+# addr_lonlat_df <- geocode(addr_df$도로명주소)
+
+addr_df <- bind_cols(addr_df, addr_lonlat_df)
+
+addr_df %>% write_rds('data/addr_df.rds')
+```
+
+
+## 위경도 &rarr; 시각화 {#ggmap-address-lonlat-viz}
+
+위경도 정보를 `ggmap()` 함수로 시작화한다. 이를 위해서 먼저 대한민국 중심점을 찾아 `get_map()`과 `zoom = 7`을 조정하여 지도를 가져온다. 그리고 나서 앞서 가져온 위경도 데이터를 지도위에 `ggmap()` 함수로 표식한다.
+
+```{r ggmap-address-lonlat-viz}
+addr_df  <- read_rds('data/addr_df.rds')
+
+## 대한민국 중심 조정
+korea_lonlat <- c(lon = 128.0347222, lat = 36.15138889)
+korea_map <- get_map(korea_lonlat, zoom = 7, scale = 1)
+
+ggmap(korea_map) +
+  geom_point(aes(lon, lat, color="red"), data = addr_df)
+```
+
+
+## 도별 위치정보 `facet` {#ggmap-address-lonlat-viz-facet}
+
+`ggplot`의 `facet_wrap()` 기능을 사용하고자 할 경우, `base_layer`로 `ggplot()`을 지정하면 작은 창을 분리시켜 핵심정보만 지도상에 표식할 수 있다. 가장 검찰 주소지를 많이 갖고 있는 시도를 상위 3개 추출하여 `facet` 기능을 도입하여 시각화한다.
+
+
+```{r ggmap-address-lonlat-viz-facet}
+addr_df %>% 
+  mutate(`시도명` = str_extract(`도로명주소`, pattern="^([\\w]+)")) %>% 
+  count(`시도명`, sort=TRUE)
+  
+ggmap(korea_map,
+      base_layer = ggplot(aes(lon, lat), data = addr_df %>% filter(str_detect(`도로명주소`, "경기|경상북도|서울")))) +
+    geom_point(aes(color = 'red')) +
+    facet_wrap(~`시도명`) +
+    guides(color=FALSE)
+```
+
+## 인터랙티브 시각화 {#ggmap-address-lonlat-viz-interactive}
+
+인터랙티브 시각화를 위해서 `leaflet` 팩키지를 많이 사용한다.
+`addProviderTiles(providers$OpenStreetMap)` 인자를 명시하여 가져올 지도를 명시하고,
+`addMarkers()` 함수에 지명을 보완하는 정보를 시각화할 수 있도록 `popup = `을 HTML 코드로 작성한다.
+
+
+```{r ggmap-address-lonlat-viz-interactive}
+library(leaflet)
+
+leaflet(data = addr_df) %>% 
+  addProviderTiles(providers$OpenStreetMap) %>% 
+  addMarkers(lng=~lon, lat=~lat, clusterOptions = markerClusterOptions(),
+                   popup = ~ as.character(paste0("<strong>", paste0(`유형_1`,":",`기관코드`), "</strong><br>",
+                                                 "-----------------------------------------------------------<br>",
+                                                 "&middot; 검찰기관명: ", `최하위기관명`, "<br>",
+                                                 "&middot; 전화번호: ", `대표전화번호`, "<br>",
+                                                 "&middot; 새우편번호: ", `새우편번호`, "<br>",
+                                                 "&middot; 도로명 주소: ", `도로명주소`, "<br>"
+                   ))) 
+```
+
+
+
+# 우편번호 지리정보 - 3년전 코드 {#postcode-viz}
 
 대한민국 우편번호를 행정표준코드관리시스템에 접속해서 다운로드 한 후
 데이터 정제과정을 통해 지리정보 시각화를 위한 데이터 품질을 높인다.
@@ -117,6 +255,3 @@ leaflet(data = addr.mst) %>% addTiles() %>%
 따라서 웹에서 자바스크립트로 코드 몇줄로 간단히 구현한 효과를 볼 수 있다.
 
 <img src="fig/geo-postcode-marker.png" alt="분당 장소 표식 10곳" width="50%" />
-
-
-
