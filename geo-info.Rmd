@@ -1,44 +1,55 @@
 ---
 layout: page
-title: 데이터 과학
-subtitle: 지리정보 시각화
+title: "공간통계를 위한 데이터 사이언스"
+subtitle: "공간정보 시각화"
+author:
+    name: xwMOOC
+    url: https://www.facebook.com/groups/tidyverse/
+    affiliation: Tidyverse Korea
+date: "`r Sys.Date()`"
 output:
   html_document: 
-    keep_md: yes
-  pdf_document:
-    latex_engine: xelatex
+    toc: yes
+    toc_float: true
+    highlight: tango
+    code_folding: show
+    number_section: true
+    self_contained: true
+editor_options: 
+  chunk_output_type: console
 mainfont: NanumGothic
 ---
 
 
-> ## 학습 목표 {.objectives}
->
-> *  지리정보 시각화를 위한 기본 개념을 학습한다.
-
 ``` {r, include=FALSE}
-source("tools/chunk-options.R")
-knitr::opts_chunk$set(error = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
+                    comment="", digits = 3, tidy = FALSE, prompt = FALSE, fig.align = 'center')
 ```
 
-[지도학(Cartography)](https://en.wikipedia.org/wiki/Cartography)는 지도를 제작하는 방식이다. 특정한 목적에 따라 특수한 주제 혹은 내용만을 나타내어 그린 지도를 **[주제도(Thematic Map)](https://ko.wikipedia.org/wiki/지도의_종류)** 라고 한다.  어느 시점에서의 일기 상황을 나타낸 기상도, 운전할 때 쓰이는 도로도, 항해할 때 쓰이는 해도, 통계값을 지도에 그려 넣은 통계 지도 등이 좋은 사례다.
+[지도학(Cartography)](https://en.wikipedia.org/wiki/Cartography)은 지도를 제작하는 방식이다. 
+특정한 목적에 따라 특수한 주제 혹은 내용만을 나타내어 그린 지도를 **[주제도(Thematic Map)](https://ko.wikipedia.org/wiki/지도의_종류)** 라고 한다. 
+어느 시점에서의 일기 상황을 나타낸 기상도, 운전할 때 쓰이는 도로도, 항해할 때 쓰이는 해도, 통계값을 지도에 그려 넣은 통계 지도 등이 좋은 사례다.
 
 지리정보를 표현하기 위해서는 다음과 같은 기본 요소가 필요하다.
 
-1. `.shp` 확장자를 갖는 지도정보 파일
-2. 대한민국에 대한 기본 지리정보: 위도 경도 
+1. `.shp`, `.geojson`, `.gpkg` 확장자를 갖는 지도파일
+1. 지리 위치를 나타내는 위도 경도 
+1. 해당 위도경도 지점, 선, 다각형 지역에 표현할 속성정보(attributes)
 
-### 1. 지리정보 파일(SHP)
+# 지리정보 파일(SHP) {#geoinfo-shapefile}
 
-대한민국 센서스용 행정구역경계(시군구) 자료는 [통계지리정보서비스](http://sgis.kostat.go.kr/contents/shortcut/shortcut_05.jsp) 사이트에서 자료신청을 하면 얻을 수 있다. 그리고, 제공되는 자세한 형식에 대한 정보는 *자료신청* &rarr; *자료제공 목록*을 참조한다. 혹은, [Encaion](https://goo.gl/KyHR46) 구글 드라이브에서 직접 다운로드 받을 수도 있다. 통계청으로 신청하면 승인까지 수일이 소요되며 행정처리일 기준으로 처리되며 다운로드 가능한 기간도 1주일이다.
+대한민국 센서스용 행정구역경계(시군구) 자료는 [통계지리정보서비스](http://sgis.kostat.go.kr/contents/shortcut/shortcut_05.jsp) 사이트에서 자료신청을 하면 얻을 수 있다. 
+그리고, 제공되는 자세한 형식에 대한 정보는 *자료신청* &rarr; *자료제공 목록*을 참조한다. 
+혹은, [Encaion](https://goo.gl/KyHR46) 구글 드라이브에서 직접 다운로드 받을 수도 있다. 
+통계청으로 신청하면 승인까지 수일이 소요되며 행정처리일 기준으로 처리되며 다운로드 가능한 기간도 1주일이다.
 
-  * [GADM](http://www.gadm.org/) 데이터베이스에서 *Country*에서 **South Korea*을 선택하고, *File Format*에서 *Shapefile*을 선택하여 다운로드한다.
-  * [DIVA-GIS](http://www.diva-gis.org/gdata) 사이트에서도 자유로이 한국을 포함한 여러국가 지도를 다운로드 받을 수 있다.
-
+* [GADM](http://www.gadm.org/) 데이터베이스에서 *Country*에서 **South Korea*을 선택하고, *File Format*에서 *Shapefile*을 선택하여 다운로드한다.
+* [DIVA-GIS](http://www.diva-gis.org/gdata) 사이트에서도 자유로이 한국을 포함한 여러국가 지도를 다운로드 받을 수 있다.
 - [통계지역경계](http://sgis.kostat.go.kr/contents/shortcut/shortcut_05.jsp)
 - [Global Administrative Areas](http://www.gadm.org/country)
 - [팀 포퐁 GitHub](https://github.com/southkorea/southkorea-maps)
 
-~~~ {.python}
+``` {r korea-map-info, eval = FALSE}
 FILEMAP = {
     'shp': [('skorea-shp.zip','http://biogeo.ucdavis.edu/data/gadm2/shp/KOR_adm.zip')],
     'kmz': [('skorea.kmz','http://biogeo.ucdavis.edu/data/gadm2/kmz/KOR_adm0.kmz'),
@@ -47,102 +58,150 @@ FILEMAP = {
     'r'  : [('skorea.RData','http://biogeo.ucdavis.edu/data/gadm2/R/KOR_adm0.RData'),
             ('skorea-provinces.RData','http://biogeo.ucdavis.edu/data/gadm2/R/KOR_adm1.RData'),
             ('skorea-municipalities.RData','http://biogeo.ucdavis.edu/data/gadm2/R/KOR_adm2.RData')]
-~~~
+```
 
-### 2.지리정보 시각화를 위한 대한민국 정보
+# 대한민국 - 지리정보 {#geoinfo-shapefile-korea}
 
 대한민국 지도에 관한 일반정보의 경도범위는 124 -- 132, 위도범위는 33 -- 43 이다. 
 
-> ### 대한민국 위도와 경도 [^kor-lonlat] {.callout}
->
-> #### 대한민국 전체
-> - 극동: 경상북도 울릉군의 독도 동단 동경 131° 52′20", 
-> - 극서: 평안북도 용천군 신도면 마안도 서단 동경 124° 11′45"
-> - 극남: 제주도 남제주군 대정읍 마라도 남단 북위 33° 06′40"
-> - 극북: 함경북도 온성군 남양면 북단 북위 43° 00′35"
->
-> #### 북한 제외
-> - 극동: 경상북도 울릉군의 독도(獨島)로 동경 131° 52′, 
-> - 극서: 전라남도 신안군의 소흑산도(小黑山島)로 동경 125° 04′, 
-> - 극북: 강원도 고성군 현내면 송현진으로 북위 38° 27′, 
-> - 극남: 제주도 남제주군 마라도(馬羅島)로 북위 33° 06′이다.
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 10px;}
+</style>
+<div class = "blue">
 
-#### 2.1 `rworldmap` 팩키지를 활용한 지도 그리기 기초
+-  대한민국 위도와 경도 [^kor-lonlat] [^kor-lonlat-news]
+    - 대한민국 전체
+        - 극동: 경상북도 울릉군의 독도 동단 동경 131° 52′20" &rarr; **131.87222222** 
+        - 극서: 평안북도 용천군 신도면 마안도 서단 동경 124° 11′45" &rarr; **124.19583333**
+        - 극남: 제주도 남제주군 대정읍 마라도 남단 북위 33° 06′40" &rarr; **33.11111111**
+        - 극북: 함경북도 온성군 남양면 북단 북위 43° 00′35" &rarr; **43.00972222**
+    - 북한 제외
+        - 극동: 경상북도 울릉군의 독도(獨島)로 동경 131° 52′20", &rarr; **131.87222222**
+        - 극서: 전라남도 신안군의 소흑산도(小黑山島)로 동경 125° 04′, &rarr; **125.06666667**
+        - 극북: 강원도 고성군 현내면 송현진으로 북위 38° 27′00, &rarr; **38.45000000**
+        - 극남: 제주도 남제주군 마라도(馬羅島)로 북위 33° 06′00" &rarr; **33.10000000**
+- 섬 포함 우리나라의 중심점은 강원도 양구군 남면 도촌리 산48번지 
+    - 북위 38도 03분 37.5초, 동경 128도 02분 2.5초 &rarr; 38.05138889, 128.03388889
+- 섬을 제외하고 육지만을 놓고 한반도의 중심점을 계산하면 북한에 위치한 강원도 회양군 현리 인근
+    - 북위(`lon`): 38도 39분 00초, 동경(`lat`) 127도 28분 55초 &rarr; 33.10000000, 127.48194444
+- 대한민국
+    - 도분초: 37° 34′ 8″ N, 126° 58′ 36″ E
+    - 소수점 좌표: 37.568889, 126.976667
+
+
+[^kor-lonlat]: [대한민국의 위도와 경도를 알고 싶어요](http://tip.daum.net/question/3092152)
+
+[^kor-lonlat-news]: [데일리전북(2009년 08월 16일), 우리나라의 중심점은 어디일까?](http://www.dailyjeonbuk.com/news/articleView.html?idxno=54514)
+
+</div>
+
+상기 도분초(Degrees Minutes Seconds)로 된 위경도 정보를 소수점 도정보를 변경하는 사이트를 통해서 `lon`, `lat` 값을 수월하게 생성할 수 있다.
+
+[Degrees Minutes Seconds to Decimal Degrees](https://www.latlong.net/degrees-minutes-seconds-to-decimal-degrees)
+
+우리 나라 지도 좌표계는 준거 타원체로 Bessel 타원체를 사용하며
+(장반경: 6378397.155m, 단반경: 6356078.96284m, 평편율 : 200.15)이며, 
+경위도는 지리좌표를 사용하고 있다. 평면직각 좌표계의 경우 국가기본도는 TM좌표를, 군사용 지도는 UTM좌표를 사용하고 있다.
+
+1910년 만들어진 국내 영토의 좌표가 110년만인 2020년, 일본식에서 국제표준으로 바뀐다고 2015년 국토교통부가 발표를 하였다.
+[우리땅 좌표 전환](https://news.joins.com/article/17310993) 기사를 통해서 대략적인 내용을 확인할 수 있다.
+우리땅 좌표, 지적도의 좌표만 남쪽 315m, 동쪽 185m씩 이동되고, 우리나라 모든 공간정보는 국제표준으로 바뀌된다고 합니다. [^crs-change]
+
+[^crs-change]: [중앙일보 (2015.03.09 15:18), "우리땅 좌표 전환, 110년 만에… 대한민국 국민이라면 반드시 알아야 할 우리의 역사"](https://news.joins.com/article/17310993)
+
+- 일제시대 좌표: bessel타원체
+- ITRF 좌표계: 세계측지계
+- GPS: WGS80타원체
+
+
+
+
+# 대한민국지도 - `rworldmap` {#rworldmap-korea}
 
 지도가 구해졌으면 범위를 한정하기 위해 극점(extreme point) 정보를 알아내는 것이 중요하다.
 [남한 극단정보](https://en.wikipedia.org/wiki/Extreme_points_of_South_Korea)
-위키피디아에서 확인한 극점정보를 사용하여 남한해 지도를 그려본다. 
+위키피디아에서 확인한 극점정보를 사용하여 남한지도를 그려본다. 
 
-``` {r geo-info-rworldmap, message=FALSE, warning=FALSE, comment=FALSE}
+
+## 세계지도 {#rworldmap-korea-map}
+
+`rworldmap` 팩키지를 사용해서 `getMap()` 함수로 세계지도 데이터를 가져온다.
+`str(korea_spdf, max.level = 2)` 명령어를 통해서 "SpatialPolygonsDataFrame"임을 확인할 수 있다.
+"SpatialPolygonsDataFrame" 객체는 지리정보(공간 다각형, Spatial Polygons)와 데이터프레임이 결합된 데이터다.
+
+``` {r geo-info-rworldmap}
 #install.packages(rworldmap)
 library(rworldmap)
 library(ggmap)
-korea.map <- getMap(resolution = "high")
 
-south.korea.limits <- geocode(c(
+korea_spdf <- rworldmap::getMap(resolution = "high")
+
+str(korea_spdf, max.level = 2)
+```
+
+## 주소정보 &rarr; 위경도 {#rworldmap-korea-map-lonlat}
+
+영문으로 구성된 대한민국 주소정보를 `ggmap` 팩키지 `geocode()` 함수에 던져 위도와 경도 정보를 가져와서
+이를 `plot()` 함수로 시각화한다.
+
+
+``` {r geo-info-rworldmap-lonlat}
+south_korea_limits <- geocode(c(
   "Daegang-ri, Hyeonnae-myeon, County of Goseong, Gangwon",
   "Marado, Daejeong-eup, Seogwipo, Jeju",
   "Dokdo-ri,Ulleung-eup, County of Ulleung, North Gyeongsang",
   "Baengnyeongdo, Baengnyeong-myeon,    County of Ongjin, Incheon")
 )  
 
-south.korea.limits
+south_korea_limits
 
-plot(korea.map,
-     xlim = range(south.korea.limits$lon),
-     ylim = range(south.korea.limits$lat),
+plot(korea_spdf,
+     xlim = range(south_korea_limits$lon),
+     ylim = range(south_korea_limits$lat),
      asp = 1
 )
 ```
 
 [남한 극단정보](https://en.wikipedia.org/wiki/Extreme_points_of_South_Korea) 중 섬을 제외한 
-본토를 기준으로 지리정보를 시각화하면 다음과 같다.
+본토를 기준으로 지리정보를 시각화하면 다음과 같다. 동일한 방식으로 섬을 제외한 본토를 기준으로 위도경도 정보를 받아오고 
+이를 바탕으로 시각화한다.
 
 ``` {r geo-info-korea-map, message=FALSE, warning=FALSE, comment=FALSE}
-south.korea.mainland.limits <- geocode(c(
+south_korea_mainland_limits <- geocode(c(
   "Daegang-ri, Hyeonnae-myeon, County of Goseong, Gangwon",
   "Songho-ri, Songji-myeon, Haenam, South Jeolla",
   "Guryongpo-eup, Pohang, North Gyeongsang",
   "Mohang-ri, Sowon-myeon, Taean, Chungcheong")
-)  
-south.korea.mainland.limits
+)
 
-plot(korea.map,
-     xlim = range(south.korea.mainland.limits$lon),
-     ylim = range(south.korea.mainland.limits$lat),
+south_korea_mainland_limits
+
+plot(korea_spdf,
+     xlim = range(south_korea_mainland_limits$lon),
+     ylim = range(south_korea_mainland_limits$lat),
      asp = 1
 )
 ```
 
-[^kor-lonlat]: [대한민국의 위도와 경도를 알고 싶어요](http://tip.daum.net/question/3092152)
 
-#### 2.2 `ggmap` 팩키지를 활용한 지도 그리기 기초
+# 참고자료 {#geoinfo-reference}
 
-`ggmap` API를 활용하여 지도를 그린다.
+## 웹사이트 {#geoinfo-software-website}  
 
-``` {r geo-info-ggmap-index, message=FALSE, warning=FALSE, comment=FALSE}
-library(ggmap)
-# 위치를 지정한다.
-krLocation <- c(124.11, 33.06, 131.52, 43.00) #좌측하단경도, 좌측하단위도, 우측상단경도, 우측상단위도
-southKrLocation <- c(125.04, 33.06, 131.52, 38.27)
-#krLocation <- c(lon=126, lat=37) # 대한민국 서울
-krMap <- get_map(location=krLocation, source="stamen", maptype="toner", crop=FALSE) #terrain, toner, watercolor
-ggmap(krMap)
-```
+- [Thematic Cartography and Geovisualization](http://www.amazon.com/Thematic-Cartography-Geovisualization-3rd-Edition/dp/0132298341)
+- [Web Cartography: Map Design for Interactive and Mobile Devices](https://www.crcpress.com/Web-Cartography-Map-Design-for-Interactive-and-Mobile-Devices/Muehlenhaus/9781439876220)
+- [R Development Translation Team (Korean)](http://www.openstatistics.net/) 
 
-`googlemap`이 위도경도 지도중앙, `stamen`, `openstreetmap`, `cloudmade`는 
-위도경도 상자표기를 권장한다.
+## R 언어 참고 웹사이트 {#geoinfo-software-r}
 
-``` {r geo-info-get-map-ggmap, message=FALSE, warning=FALSE, comment=FALSE, eval=FALSE}
-krMap <- get_map(location=krLocation, source="stamen", maptype="toner", crop=FALSE) #terrain, satellite, roadmap, hybrid, toner, watercolor
-ggmap(krMap)
-```
+- [spatial.ly](http://spatial.ly/r/)
+- [Spatial data in R: Using R as a GIS](https://pakillo.github.io/R-GIS-tutorial/)
+- [Introduction to Spatial Data and ggplot2](http://rpubs.com/RobinLovelace/intro-spatial)
+- [Spatial analysis in R: 랭커스터 대학](http://www.maths.lancs.ac.uk/~rowlings/Teaching/- Sheffield2013/index.html)
+- [Notes on Spatial Data Operations in R](https://dl.dropboxusercontent.com/u/9577903/- broomspatial.pdf)
+- [Making maps with R](http://www.molecularecologist.com/2012/09/making-maps-with-r/)
 
-### 3. 지리정보처리 툴체인 [^1]
-
-<img src="fig/R_SAGA_GE_logo.jpg" alt="LAMP와 Docker가 설치된 우분투 공용 이미지" width="40%" /> 
-
-[^1]: http://spatial-analyst.net/wiki/index.php?title=Main_Page
+## 지리정보처리 툴체인 {#geoinfo-software}
 
 - 오픈 GIS 소프트웨어
     - [System for Automated Geoscientific Analyses (SAGA GIS)](https://en.wikipedia.org/wiki/SAGA_GIS)
@@ -151,25 +210,9 @@ ggmap(krMap)
 - KML 마크업 언어
     - [Keyhole Markup Language, KML](https://en.wikipedia.org/wiki/Keyhole_Markup_Language)
 
-
-### 4. 지리정보 시각화 사례
+## 지리정보 시각화 사례 {#geoinfo-software-example}
 
 - 미국 대선(2012) [뉴욕타임즈 President Map](http://elections.nytimes.com/2012/results/president)
 - 미국 빈곤율 정보 시각화 [The Topography of Poverty in the United States](http://www.cdc.gov/pcd/issues/2007/oct/07_0091.htm)
 - [http://indiemapper.com/](http://indiemapper.com/app/learnmore.php?l=choropleth)
 
-
-### 참고자료 
-
-- [Thematic Cartography and Geovisualization](http://www.amazon.com/Thematic-Cartography-Geovisualization-3rd-Edition/dp/0132298341)
-- [Web Cartography: Map Design for Interactive and Mobile Devices](https://www.crcpress.com/Web-Cartography-Map-Design-for-Interactive-and-Mobile-Devices/Muehlenhaus/9781439876220)
-- [R Development Translation Team (Korean)](http://www.openstatistics.net/) 
-
-### R 언어 참고 웹사이트
-
-- [spatial.ly](http://spatial.ly/r/)
-- [Spatial data in R: Using R as a GIS](https://pakillo.github.io/R-GIS-tutorial/)
-- [Introduction to Spatial Data and ggplot2](http://rpubs.com/RobinLovelace/intro-spatial)
-- [Spatial analysis in R: 랭커스터 대학](http://www.maths.lancs.ac.uk/~rowlings/Teaching/- Sheffield2013/index.html)
-- [Notes on Spatial Data Operations in R](https://dl.dropboxusercontent.com/u/9577903/- broomspatial.pdf)
-- [Making maps with R](http://www.molecularecologist.com/2012/09/making-maps-with-r/)
