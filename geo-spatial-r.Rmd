@@ -26,7 +26,75 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
                     comment="", digits = 3, tidy = FALSE, prompt = FALSE, fig.align = 'center')
 ```
 
-# 지리정보 파일 {#geoinfo-filename}
+# 지리정보 파일 [^data-carpentry-shapefile] {#geoinfo-filename}
+
+[^data-carpentry-shapefile]: [Data Carpentry, "Introduction to Geospatial Raster and Vector Data with R"](https://datacarpentry.org/r-raster-vector-geospatial/)
+
+전통적으로 지리정보는 `.shp` 확장자명을 갖는 ESRI Shapefile에 저장을 했다.
+`*.shp`, `*.dbf`, `*.shx` 파일이 나눠서 저장되어 있다. 이로 인해서 ESRI Shapefile 지도정보 파일은
+디렉토리에 담겨지게 된다.
+
+- `*.shp`: `geometry` 정보(점, 선, 다각형)
+- `*.dbf`: 각 `geometry`에 대한 속성정보 저장
+- `*.shx`: `geometry`와 속성(attributes) 정보 연결
+- `*.prj`:  좌표계 정보 저장
+
+R 에서 ESRI Shapefile 파일을 저장하면 S4 `SpatailPolygonsDataFrame`으로 저장된다. 
+따라서, 점/선/다각형이 담긴 `geometry`와 데이터프레임이 연결되어 저장되어 있다.
+
+실제 세상을 지도로 표현함에 있어 두가지 방식을 사용한다.
+하나는 벡터(vector)로 표현하는 것이고 `OGR`을 사용하고, 또 다른 하나는 격자(Grid), 래스터(raster)로 
+표현하는 것으로 `GDAL`을 아래에 각각 깔고 R로 불러와서 사용하게 된다.
+
+
+# 좌표계(CRS) [^korean-crs] {#geoinfo-CRS}
+
+[^korean-crs]: [OSGeo(Open Source GeoSpatial) 한국어 지부 - OSGeo Korean Chapter, "한국 주요 좌표계 EPSG코드 및 proj4 인자 정리""](https://www.osgeo.kr/17)
+
+좌표계(CRS, Coordinate Reference System)는 둥근 지구를 2차원 평면에 투영(projection)하는 다양한 방법을 지칭한다.
+좌표계를 제작할 때 각기 다른 목적에 맞춰 제작되었기 때문에 지리정보를 활용함에 있어 적절한 좌표계를 채택하여활용하는 것이 중요하다.
+많이 사용되는 좌표계는 다음이 있다.
+WGS84(WGS 1984, EPSG:4326, WGS84)는 세계 지구 좌표 시스템(World Geodetic System, WGS) 1984년에 제정된 범 지구적 측위 시스템으로 지도학, 측지학, 항법에 많이 사용된다.
+
+- **EPSG:4326** &rarr; WGS84 경위도: GPS가 사용하는 좌표계
+    - 서비스: 구글 지구(Google Earth)
+    - 단위: 소수점 (decimal degrees)
+    - `+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs`
+- **EPSG:3857** &rarr;  Google Mercator
+    - 서비스: 구글 지도(Google Maps), 빙 지도(Bing Maps), 야후지도, OSM(Open Street Maps)
+    - 단위: 미터
+    - `+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs`
+- 다음카카오 지도 API [^kakao-api-crs]
+    - EPSG:5181
+    - CRS 스펙: `+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=500000 +ellps=GRS80 +units=m +no_defs`
+
+[^kakao-api-crs]: [Kakao DevTalk, "다음지도 좌표계 관련"](https://devtalk.kakao.com/t/topic/35844)
+
+# R 팩키지 {#geoinfo-packages}
+
+- 공간 데이터 
+    - `sp`: [sp: Classes and Methods for Spatial Data](https://cran.r-project.org/web/packages/sp/index.html)
+    - `sf`: [sf](https://cran.r-project.org/web/packages/sf/index.html)
+        - 'GDAL': 데이터를 불러오고 저장.
+        - 'GEOS': geometry 연산작업
+        - 'PROJ': 좌표계 변환(projection conversions and datum transformations)
+    - `stars`: [Spatiotemporal tidy arrays for R](https://github.com/r-spatial/stars)        
+- 정적 시각화
+    - `ggmap`: [ggmap: Spatial Visualization with ggplot2](https://cran.r-project.org/web/packages/ggmap/index.html)
+- 인터랙티브 시각화
+    - `leaflet`: [Open-source JavaScript libraries for interactive maps](https://rstudio.github.io/leaflet/)
+    - `tmap`: [tmap: Thematic Maps](https://github.com/mtennekes/tmap)
+    - `mapview`: [mapview: Interactive Viewing of Spatial Data in R](https://github.com/r-spatial/mapview)
+
+
+# 지도 데이터 {#geoinfo-shapefile}
+
+- `tigris`: [Census TIGER/Line shapefiles](https://github.com/walkerke/tigris)
+- `rworldmap`: [Mapping Global Data](https://github.com/AndySouth/rworldmap)
+- [대한민국 최신 행정구역(SHP) 다운로드](http://www.gisdeveloper.co.kr/?p=2332): 시도, 시군구, 읍면동, 리
+- [대한민국 행정동 경계(admdongkor)](https://github.com/vuski/admdongkor)
+    - `geojson`  파일형식, 좌표계는 WGS84 (EPSG:4326), 인코딩 UTF-8.
+- [국토정보플랫폼 - 국토교통부 국토지리정보원 운영](http://map.ngii.go.kr/mn/mainPage.do)
 
 
 

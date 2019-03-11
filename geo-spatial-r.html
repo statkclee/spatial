@@ -292,7 +292,87 @@ Tidyverse Korea<br><h4 class="date"><em>2019-03-11</em></h4>
 
 
 <div id="geoinfo-filename" class="section level1">
-<h1><span class="header-section-number">1</span> 지리정보 파일</h1>
+<h1><span class="header-section-number">1</span> 지리정보 파일 <a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a></h1>
+<p>전통적으로 지리정보는 <code>.shp</code> 확장자명을 갖는 ESRI Shapefile에 저장을 했다. <code>*.shp</code>, <code>*.dbf</code>, <code>*.shx</code> 파일이 나눠서 저장되어 있다. 이로 인해서 ESRI Shapefile 지도정보 파일은 디렉토리에 담겨지게 된다.</p>
+<ul>
+<li><code>*.shp</code>: <code>geometry</code> 정보(점, 선, 다각형)</li>
+<li><code>*.dbf</code>: 각 <code>geometry</code>에 대한 속성정보 저장</li>
+<li><code>*.shx</code>: <code>geometry</code>와 속성(attributes) 정보 연결</li>
+<li><code>*.prj</code>: 좌표계 정보 저장</li>
+</ul>
+<p>R 에서 ESRI Shapefile 파일을 저장하면 S4 <code>SpatailPolygonsDataFrame</code>으로 저장된다. 따라서, 점/선/다각형이 담긴 <code>geometry</code>와 데이터프레임이 연결되어 저장되어 있다.</p>
+<p>실제 세상을 지도로 표현함에 있어 두가지 방식을 사용한다. 하나는 벡터(vector)로 표현하는 것이고 <code>OGR</code>을 사용하고, 또 다른 하나는 격자(Grid), 래스터(raster)로 표현하는 것으로 <code>GDAL</code>을 아래에 각각 깔고 R로 불러와서 사용하게 된다.</p>
+</div>
+<div id="geoinfo-CRS" class="section level1">
+<h1><span class="header-section-number">2</span> 좌표계(CRS) <a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a></h1>
+<p>좌표계(CRS, Coordinate Reference System)는 둥근 지구를 2차원 평면에 투영(projection)하는 다양한 방법을 지칭한다. 좌표계를 제작할 때 각기 다른 목적에 맞춰 제작되었기 때문에 지리정보를 활용함에 있어 적절한 좌표계를 채택하여활용하는 것이 중요하다. 많이 사용되는 좌표계는 다음이 있다. WGS84(WGS 1984, EPSG:4326, WGS84)는 세계 지구 좌표 시스템(World Geodetic System, WGS) 1984년에 제정된 범 지구적 측위 시스템으로 지도학, 측지학, 항법에 많이 사용된다.</p>
+<ul>
+<li><strong>EPSG:4326</strong> → WGS84 경위도: GPS가 사용하는 좌표계
+<ul>
+<li>서비스: 구글 지구(Google Earth)</li>
+<li>단위: 소수점 (decimal degrees)</li>
+<li><code>+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs</code></li>
+</ul></li>
+<li><strong>EPSG:3857</strong> → Google Mercator
+<ul>
+<li>서비스: 구글 지도(Google Maps), 빙 지도(Bing Maps), 야후지도, OSM(Open Street Maps)</li>
+<li>단위: 미터</li>
+<li><code>+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs</code></li>
+</ul></li>
+<li>다음카카오 지도 API <a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>
+<ul>
+<li>EPSG:5181</li>
+<li>CRS 스펙: <code>+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=500000 +ellps=GRS80 +units=m +no_defs</code></li>
+</ul></li>
+</ul>
+</div>
+<div id="geoinfo-packages" class="section level1">
+<h1><span class="header-section-number">3</span> R 팩키지</h1>
+<ul>
+<li>공간 데이터
+<ul>
+<li><code>sp</code>: <a href="https://cran.r-project.org/web/packages/sp/index.html">sp: Classes and Methods for Spatial Data</a></li>
+<li><code>sf</code>: <a href="https://cran.r-project.org/web/packages/sf/index.html">sf</a>
+<ul>
+<li>‘GDAL’: 데이터를 불러오고 저장.</li>
+<li>‘GEOS’: geometry 연산작업</li>
+<li>‘PROJ’: 좌표계 변환(projection conversions and datum transformations)</li>
+</ul></li>
+<li><code>stars</code>: <a href="https://github.com/r-spatial/stars">Spatiotemporal tidy arrays for R</a><br />
+</li>
+</ul></li>
+<li>정적 시각화
+<ul>
+<li><code>ggmap</code>: <a href="https://cran.r-project.org/web/packages/ggmap/index.html">ggmap: Spatial Visualization with ggplot2</a></li>
+</ul></li>
+<li>인터랙티브 시각화
+<ul>
+<li><code>leaflet</code>: <a href="https://rstudio.github.io/leaflet/">Open-source JavaScript libraries for interactive maps</a></li>
+<li><code>tmap</code>: <a href="https://github.com/mtennekes/tmap">tmap: Thematic Maps</a></li>
+<li><code>mapview</code>: <a href="https://github.com/r-spatial/mapview">mapview: Interactive Viewing of Spatial Data in R</a></li>
+</ul></li>
+</ul>
+</div>
+<div id="geoinfo-shapefile" class="section level1">
+<h1><span class="header-section-number">4</span> 지도 데이터</h1>
+<ul>
+<li><code>tigris</code>: <a href="https://github.com/walkerke/tigris">Census TIGER/Line shapefiles</a></li>
+<li><code>rworldmap</code>: <a href="https://github.com/AndySouth/rworldmap">Mapping Global Data</a></li>
+<li><a href="http://www.gisdeveloper.co.kr/?p=2332">대한민국 최신 행정구역(SHP) 다운로드</a>: 시도, 시군구, 읍면동, 리</li>
+<li><a href="https://github.com/vuski/admdongkor">대한민국 행정동 경계(admdongkor)</a>
+<ul>
+<li><code>geojson</code> 파일형식, 좌표계는 WGS84 (EPSG:4326), 인코딩 UTF-8.</li>
+</ul></li>
+<li><a href="http://map.ngii.go.kr/mn/mainPage.do">국토정보플랫폼 - 국토교통부 국토지리정보원 운영</a></li>
+</ul>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p><a href="https://datacarpentry.org/r-raster-vector-geospatial/">Data Carpentry, “Introduction to Geospatial Raster and Vector Data with R”</a><a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p><a href="https://www.osgeo.kr/17">OSGeo(Open Source GeoSpatial) 한국어 지부 - OSGeo Korean Chapter, “한국 주요 좌표계 EPSG코드 및 proj4 인자 정리”“</a><a href="#fnref2">↩</a></p></li>
+<li id="fn3"><p><a href="https://devtalk.kakao.com/t/topic/35844">Kakao DevTalk, “다음지도 좌표계 관련”</a><a href="#fnref3">↩</a></p></li>
+</ol>
 </div>
 
 
