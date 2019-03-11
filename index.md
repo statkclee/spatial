@@ -16,13 +16,7 @@ title: 공간통계를 위한 데이터 과학
 
 - [공간 통계 - 지리정보](geo-info.html)
     - [주소와 위도경도](geo-info-lonlat.html)
-    - [우편번호/주소 지리정보 시각화](geo-info-postcode.html)    
-    - [Kormaps, leaflet 지리정보 시각화 기초](geo-info-kormaps.html)
-    - [단계구분도(choropleth) 지리정보 시각화](geo-info-choropleth.html)
-    - [생활안전 - 보호관찰소와 범죄](geo-info-crime.html)     
-    - [.shp 지도 일부 추출](geo-info-shapefile.html)
-    - [IP 주소 지리정보 시각화](geo-info-ip-address.html)
-    - [제18대 대통령선거](geo-18-president.html)
+    - [우편번호/주소 지리정보 시각화 - `ggplot` + `ggmap`](geo-info-postcode.html)    
     - [지진과 원전 - sf와 데이터프레임의 만남](geo-sf-dataframe.html)
 - 물류 
     - [R 연습문제 - 지도](geo-r-exercise.html)
@@ -32,7 +26,13 @@ title: 공간통계를 위한 데이터 과학
     - [제6회 지방선거 - 기초자치단체장](spatial-jibang-govenment.html)
     - [경기도 대통령선거 - `geofacet`](spatial-jibang-geofacet.html)
     - [시도별 실업률 추세 - `geofacet`](spatial-jibang-unemp.html)
-
+- 오래된 코드
+    - [Kormaps, leaflet 지리정보 시각화 기초](geo-info-kormaps.html)
+    - [단계구분도(choropleth) 지리정보 시각화](geo-info-choropleth.html)
+    - [생활안전 - 보호관찰소와 범죄](geo-info-crime.html)     
+    - [.shp 지도 일부 추출](geo-info-shapefile.html)
+    - [IP 주소 지리정보 시각화](geo-info-ip-address.html)
+    - [제18대 대통령선거](geo-18-president.html)
 
 ### xwMOOC 오픈 교재
 
