@@ -60,11 +60,7 @@ knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE,
 데이터프레임과 `.shp` 파일 `@data` 데이터프레임을 `merge()` 명령어로 병합시켜 데이터프레임이 포함된 `.shp` 파일을 생성시킨다.
 그리고 나서 `tmap` 주제도를 활용하여 쉽게 시각화한다.
 
-# 구글 지리정보 API [^ggmap-api] [^google-maps-price] {#spatial-geocode-api}  
-
-[^ggmap-api]: [Dr.Kevin 5/3/2018, "Google Map Api를 활용한 지도 시각화"](https://mrkevinna.github.io/R-%EC%8B%9C%EA%B0%81%ED%99%94-3/)
-
-[^google-maps-price]: [PPC LAND(2018/05/11), "Google increases prices of Google Maps API and developers are not happy"](https://ppc.land/google-increases-prices-of-google-maps-api-and-developers-are-not-happy/)
+# 구글과 다음카카오 API {#spatial-geocode-gd-api}  
 
 데이터를 지리정보와 결합하여 제공할 경우 현상에 대한 이해, 예측, 통찰력을 얻을 수 있다.
 데이터를 지리정보와 결합할 때, 가장 필요한 것이 주소정보에 위도와 경도 정보를 붙여 지도에 표시하게 된다.
@@ -82,11 +78,43 @@ R에서 구글, 네이버, 다음등에서 제공하는 지리정보 API를 활�
 
 <img src="fig/geo-googleapi.png" alt="Google 지도 API" width="77%" />
 
+# 구글 지리정보 API [^ggmap-api] [^google-maps-price] {#spatial-geocode-api}  
+
+[^ggmap-api]: [Dr.Kevin 5/3/2018, "Google Map Api를 활용한 지도 시각화"](https://mrkevinna.github.io/R-%EC%8B%9C%EA%B0%81%ED%99%94-3/)
+
+[^google-maps-price]: [PPC LAND(2018/05/11), "Google increases prices of Google Maps API and developers are not happy"](https://ppc.land/google-increases-prices-of-google-maps-api-and-developers-are-not-happy/)
+
+
 ggmap 2.7버전부터 `google_register()` 함수를 사용해서 인증과정을 거친다. [Google Maps Platform - "
-Get API Key"](https://developers.google.com/maps/documentation/geocoding/get-api-key) 웹페이지를 참조하여 API키를 받을 수도 있고, `?register_google`을 참조하여 인증작업을 시작하면 되는데 모든 구글 지리정보 API사용이 유료화되어 아래 코드를 남겨두는 것으로 갈음하고자한다.
+Get API Key"](https://developers.google.com/maps/documentation/geocoding/get-api-key) 웹페이지를 참조하여 API키를 받을 수도 있고, `?register_google`을 참조하여 인증작업을 시작한다.
 
-**지금은 더 이상 아래 코드가 인증이 되지 않아 동작하지 않습니다.**
+Google API는 무료가 아니다. 구글 지도 API를 사용하려면 먼저 [Google Maps Pltaform - Get API Key](https://developers.google.com/maps/documentation/geocoding/get-api-key)를 참조하여 
+[Google Maps Platform 사용 설정](https://cloud.google.com/maps-platform/#get-started)을 따라야만 된다.
+신용카드도 등록하고 구글이 원하는 바를 모두 맞춰주면 API키가 발급된다. 월기준 40,000 호출횟수까지는 무료라고 한다. 그 이상을 넘어가면 호출 횟수당 0.005달러가 신용카드를 통해 청구된다. 따라서 API키가 외부에 노출되지 않도록 보안에 특별히 신경을 쓴다.
 
+API키를 발급받게 받아 다음 명령어를 실행시키면 `C:/Users/user/Documents/.Renviron` 파일에... 
+`GGMAP_GOOGLE_API_KEY=API키` 행이 추가된다. 따라서 다음부터는 자동으로 구글 지도 API를 사용할 수 있는 효과를 얻게 된다. 
+
+- `register_google(key = "API키", write = TRUE)`
+
+만약 `usethis::edit_r_environ()`을 사용하는 경우 `GGMAP_GOOGLE_API_KEY=API키` 행을 직접 추가해도 무방하다.
+그리고 추천하는 것은 `Maps Static API` 서비스를 제외한 나머지 서비스를 모두 비활성화(Disable) 시킨다. 설사 API키가 외부에 유출되더라도 피해를 최소화할 수 있다. 그리고 필요한 경우만 API를 활성화해서 사용한다. 예를 들어 `Geocoding API`를 사용해야만, 주소정보를 전달했을 때 위도와 경도 정보를 반환받아 시각화할 수 있게 된다.
+
+Google API 가격관련 자세한 사항은 다음 웹사이트를 참조한다.
+
+- [MAPS, ROUTES, PLACES의 가격 정책](https://cloud.google.com/maps-platform/pricing/sheet/)
+
+
+```{r ggmap-api-register}
+library(tidyverse)
+library(ggmap)
+
+# register_google(key = "API키", write = TRUE)
+```
+
+## `geocode()` 헬로월드 {#ggmap-config-hello-world}
+
+가장 먼저 지명을 `geocode()`로 던지게 되면 위도와 경도 및 경우에 따라서는 주소도 반환시킬 수 있다.
 주소정보를 함께 출력하고자할 경우 `output="latlona"` 선택옵션을 추가한다.
 
 
@@ -105,13 +133,10 @@ geocode(enc2utf8("속초&language=ko"), source='google', output="latlona")
 
 구글 지도 API를 사용할 경우, 무료로 이용할 수 있는 반면에 사용자의 오남용을 방지하기 위해서 어느 API 서비스도 마찬가지지만,
 구글이나 API 서비스 제공자 임의로 API를 변경할 수 있고, 사용제한을 둔다.
-현재 글을 작성하는 시점에서 구글 지도 API의 경우 일일 2,500 번 무료로 사용이 가능하다.
+전면 유료화 이전 구글 지도 API의 경우 일일 2,500 번 무료로 사용이 가능하다.
 
-`geocodeQueryCheck(userType = "free")` 명령어를 사용하여 구글 지도 API 사용량을 확인할 수 있다.
-
-``` {r geo-info-check, eval=FALSE}
-geocodeQueryCheck(userType = "free")
-```
+`geocodeQueryCheck(userType = "free")` 명령어를 사용하여 구글 지도 API 사용량을 확인할 수 있었다.
+2018년 중반부터 일별 쿼리 한계는 사라지고 월별 40,000건으로 조정되었다.
 
 경기도 및 강원도 3개 지점에 대한 위도경도 정보를 받아오는 경우, 먼저 데이터프레임을 생성하고 나서,
 `enc2utf8()` 함수로 인코딩을 검증하고 나서 `geocode` API를 호출해서 위도경도 정보를 받아오면서
@@ -120,8 +145,6 @@ geocodeQueryCheck(userType = "free")
 ``` {r geo-info-ggmap, eval=FALSE}
 library(ggmap)
 library(plyr)
-
-geocodeQueryCheck(userType = "free")
 
 kangwon.loc <- data.frame(addr=c("강원도 속초시 영랑동", 
                                  "경기도 의왕시 포일세거리로 73",
@@ -135,29 +158,24 @@ kangwon.loc.latlon <- with(kangwon.loc, data.frame(addr,
 kangwon.loc.latlon  
 ```
 
-`geocodeQueryCheck(userType = "free")` 명령어로 사용량이 3개 준 것을 확인할 수 있다.
-
-``` {r geo-info-check2, eval=FALSE}
-geocodeQueryCheck(userType = "free")
-```
-
 ## `dplyr` 활용한 간결한 코드 {#spatial-dplyr-simplecode} 
 
 `dplyr`에서 제공하는 `mutate_geocode` 함수를 사용해서 위도경도 정보를 일괄적으로 받아와서 R 데이터프레임으로 저장한다.
 
 ``` {r spatial-simple-code, eval=FALSE}
-library(dplyr)
-kangwon.loc.dplyr <- kangwon.loc %>% mutate_geocode(addr)
-kangwon.loc.dplyr
+kangwon_loc_df <- kangwon.loc %>% 
+  mutate_geocode(addr)
 ```
 
 경기도와 강원도 3개 주소정보를 구글 지도 API 지역에 전달하여 위도와 경도정보를 받아와서 이를 데이터프레임에 붙인다.
 받아온 정보를 `kangwon.loc.dplyr` 데이터프레임에 저장하고 이를 활용하여 구글지도에 시각화를 한다.
+`qmap()` 함수를 사용해서 신속하게 지도를 만들어 시각화하는 것도 가능하다.
 
 ``` {r geo-info-qmap, eval=FALSE}
 kangwonMap <- qmap(enc2utf8("속초"), zoom = 8, maptype = "toner-lite")
 
-kangwonMap + geom_point(data = kangwon.loc.dplyr, aes(lon,lat), size = 2, colour="blue")
+kangwonMap + 
+  geom_point(data = kangwon_loc_df, aes(lon,lat), size = 2, colour="blue")
 ```
 
 
@@ -169,8 +187,9 @@ kangwonMap + geom_point(data = kangwon.loc.dplyr, aes(lon,lat), size = 2, colour
 
 ## 헬로우 월드 {#kakao-map-api-hello-world}
 
-`C:\Program Files\R\R-3.5.2\etc` 디렉토리 `Rprofile.site` 파일에 [카카오 개발자센터](https://developers.kakao.com/) 앱개발에 사용할 API 키를 `DAUM_MAP_API_KEY` 변수에 저장시킨다.
-재미있는 것은 `Authorization`에서 `"KakaoAK "`를 꼭 앞에 붙여야함으로 `paste0()` 함수로 결합시켜 던진다.  
+`C:\Program Files\R\R-3.5.2\etc` 디렉토리 `Rprofile.site` 파일에 [카카오 개발자센터](https://developers.kakao.com/) 앱개발에 사용할 API 키를 `DAUM_MAP_API_KEY` 변수에 저장시킨다. 재미있는 것은 `Authorization`에서 `"KakaoAK "`를 꼭 앞에 붙여야함으로 `paste0()` 함수로 결합시켜 던진다.  
+
+혹은 `usethis` 팩키지를 사용해서 `edit_r_environ()` 명령어를 사용해서 `.Renviron` 파일에 `DAUM_MAP_API_KEY`값을 설정하여 사용하는 것도 좋다.
 
 삼정KPMG주소를 지도위에 표시하는 것을 목표로 먼저 삼정KPMG 주소를 던져서 위도경도를 받아내는 헬로월드 코드를 작성해본다. 
 
@@ -179,6 +198,8 @@ kangwonMap + geom_point(data = kangwon.loc.dplyr, aes(lon,lat), size = 2, colour
 library(httr)
 library(tidyverse)
 library(jsonlite)
+
+# usethis::edit_r_environ()
 
 # 주소를 지정합니다. 
 kpmg_addr <- '서울특별시 강남구 역삼동 737' 
