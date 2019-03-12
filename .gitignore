@@ -9,3 +9,4 @@ CONDUCT.html
 _site
 .DS_Store
 data/*.xlsx
+data/shapefile/

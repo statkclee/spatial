@@ -1,0 +1,174 @@
+---
+layout: page
+title: "공간통계를 위한 데이터 사이언스"
+subtitle: "`.shp` 지도 일부 추출"
+author:
+    name: xwMOOC
+date: "`r Sys.Date()`"
+output:
+  html_document: 
+    toc: yes
+    toc_float: true
+    highlight: tango
+    code_folding: hide
+    number_section: true
+    self_contained: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE,
+                      comment="", digits = 3, tidy = FALSE, prompt = FALSE, fig.align = 'center')
+```
+
+
+# `shapefile?` {#geo-info-shapefile}
+
+Shapefile은 확장자로 `.shp`을 갖고, 벡터방식으로 공간정보를 저장한다.
+`.shp` 파일은 점(Point), 선(Line), 면(Polygon) 중 하나의 속성을 갖는다.
+`.shp` 파일에서 면(polygon)을 잘라내거나 [^shape-polygon-clipping]
+`.shp` 파일에서 면(polygon)을 합칠 수도 있다. [^shape-polygon-dissolving]
+
+[^shape-polygon-clipping]: [Clipping polygons in R](https://philmikejones.wordpress.com/2015/09/01/clipping-polygons-in-r/)
+[^shape-polygon-dissolving]: [Dissolve polygons in R](https://philmikejones.wordpress.com/2015/09/01/clipping-polygons-in-r/)
+
+# 성남시 {#geo-info-shapefile-sungnam}
+
+시군구 Shapefile에서 성남시를 추출하고, 성남시를 구성하는 중원구, 수정구, 분당구로 나눠진 것을 확인해보자.
+이 단순한 작업을 위해서 [대한민국 최신 행정구역(SHP) 다운로드](http://www.gisdeveloper.co.kr/?p=2332) 웹사이트에서 **시군구** `2019년 2월 업데이트 다운로드` 기준 파일을 사용하자.
+
+## 시군구 Shapefile {#geo-info-shapefile-sungnam-sig}
+
+`sf` 팩키지로 시군구 `shapefile`을 불러온다. 그리고 나서 인코딩을 `CP949`에서 `UTF-8`으로 변경을 한다.
+그리고 나서, `st_read()` 함수로 `shapefile`을 불러오게 되면 `sf data.frame` 객체라서 `dplry` 동사를 자유로이 활용할 수 있다. 따라서 `SIG_KOR_NM` 칼럼만 추출하여 `plot()` 함수로 시각화한다.  
+
+```{r geo-info-sigungu}
+library(tidyverse)
+library(sf)
+
+sigungu_shp <- st_read("data/shapefile/SIG_201902/TL_SCCO_SIG.shp")
+
+## 인코딩 변경
+sigungu_shp$SIG_KOR_NM <- iconv(sigungu_shp$SIG_KOR_NM, from = "CP949", to = "UTF-8", sub = NA, mark = TRUE, toRaw = FALSE)
+
+## 시각화
+sigungu_shp %>% 
+  select(SIG_KOR_NM) %>% 
+  plot()
+```
+
+다음으로 성남시만 추출하여 동일한 방식으로 시각화한다. 이번에는 성남시관련 전체 칼럼을 지정하여 식가화 시킨다.
+
+```{r geo-info-sigungu-sungnam}
+sungnam_shp <- sigungu_shp %>% 
+  filter(str_detect(SIG_KOR_NM, "성남"))
+
+sungnam_shp %>% 
+  plot()
+```
+
+나중에 성남시만 별도 작업을 하는 경우를 대바하여 `sungnam` 디렉토리를 생성하고 `sungnam.shp` 파일명으로 저장시킨다.
+
+```{r geo-info-sigungu-sungnam-save}
+dir.create('data/shapefile/SIG_201902/sungnam')
+st_write(sungnam_shp, "data/shapefile/SIG_201902/sungnam/sungnam.shp", delete_dsn=TRUE)
+```
+
+
+## 읍면동 Shapefile {#geo-info-shapefile-sungnam-emd}
+
+시군구 `shapefile` 작업을 했을 때와 동일한 방식으로 작업을 수행하는데 이번에는 읍면동 `shapefile`을 사용한다.
+읍면동 `shapefile`에 시군구 정보가 빠져있다 보니 [행정안전부 지방행정실 홈페이지](https://www.mois.go.kr/frt/bbs/type001/commonSelectBoardList.do?bbsId=BBSMSTR_000000000052)에서 "행정동코드(전체) 및 법정동·행정동코드"을 참조하여 수정구, 중원구, 분당구를 구분하는 필드를 `SIGUNGU`로 추가하여 시각화를 한다.
+
+```{r geo-info-sigungu-emd-gu}
+emd_shp <- st_read("data/shapefile/EMD_201902/TL_SCCO_EMD.shp")
+
+## 인코딩 변경
+emd_shp$EMD_KOR_NM <- iconv(emd_shp$EMD_KOR_NM, from = "CP949", to = "UTF-8", sub = NA, mark = TRUE, toRaw = FALSE)
+
+## 성남시 행정동 코드: 4113000000
+sungnam_emd_shp <- emd_shp %>% 
+  mutate(SIGUNGU = case_when(str_detect(EMD_CD, "^41131") ~ "수정구",
+                             str_detect(EMD_CD, "^41133") ~ "중원구",
+                             str_detect(EMD_CD, "^41135") ~ "분당구")) %>% 
+  filter(!is.na(SIGUNGU))
+
+## 시각화
+sungnam_emd_shp %>% 
+  group_by(SIGUNGU) %>% 
+  summarise(`동수` = n()) %>% 
+  plot()
+```
+
+이번에는 분당구만 대상으로 동을 지도평면위에 시각화한다.
+
+```{r geo-info-sigungu-emd-bundang}
+## 시각화
+sungnam_emd_shp %>% 
+  filter(SIGUNGU == "분당구") %>% 
+  select(EMD_CD) %>% 
+  plot()
+```
+
+마지막으로 성남시 시군구 읍면동까지 잘 정리된 `shapefile`을 저장하여 다음 교차분석을 준비한다.
+
+```{r geo-info-sigungu-emd-bundang-crs}
+## shapefile 저장
+dir.create('data/shapefile/SIG_201902/sungnam')
+st_write(sungnam_emd_shp, "data/shapefile/SIG_201902/sungnam/sungnam_emd.shp", delete_dsn=TRUE)
+```
+
+## 시군구 읍면동 좌표계 {#geo-info-shapefile-crs}
+
+[대한민국 최신 행정구역(SHP) 다운로드](http://www.gisdeveloper.co.kr/?p=2332)로 작업한 지도파일은 `proj4string: "+proj=tmerc +lat_0=38 +lon_0=127.5 +k=0.9996 +x_0=1000000 +y_0=2000000 +ellps=GRS80 +units=m +no_defs"`을 구글링해서 얻은 정보를 통해 `EPSG:5179`로 확인되고 네이버지도에서 사용중인 좌표계라고 한다. [^naver-map-crs]
+
+[^naver-map-crs]: [VISUALIZING STORY (STORY ABOUT TRUTH AND LIFE), "한국 주요 좌표계 EPSG코드 및 PROJ4 인자 정리"](https://visualizingstory.wordpress.com/2013/04/24/%ED%95%9C%EA%B5%AD-%EC%A3%BC%EC%9A%94-%EC%A2%8C%ED%91%9C%EA%B3%84-epsg%EC%BD%94%EB%93%9C-%EB%B0%8F-proj4-%EC%9D%B8%EC%9E%90-%EC%A0%95%EB%A6%AC/)
+
+```{r geo-info-sigungu-emd}
+st_crs(sigungu_shp)
+st_crs(emd_shp)
+```
+
+# 행정동 전체코드 [^hang-code-faq] {#geo-info-shapefile-code}
+
+[^hang-code-faq]: [행정표준코드관리시스템](https://www.code.go.kr/index.do)
+
+"행정표준코드관리시스템" &rarr; 자주묻는질문 &rarr; 게시판글 1번: "	
+행정동코드(전체) 및 법정동·행정동코드 매핑 자료 받는 방법은 어떻게 되나요?" 
+
+지도관련하여 주무관청이 다르고 서로 추구하는 바도 달라 동일한 지도위에 서로 다른 코드를 정해 사용하고 있다. 과거에는 서로 교차업무를 할 일이 없어 독립적인 코드체계가 그다지 문제가 되지 않았으나, 오늘날에는 코딩 작업하는 개발자에게 커다란 고통을 수반하고 있다. 크게 통계청과 행정안전부로 나눠 살펴볼 수 있다.
+
+[통계청](http://kostat.go.kr/) &rarr; [통계분류포털](http://kssc.kostat.go.kr) 사이트에서,  
+즉, `통계청` &rarr; `통계분류포털` &rarr; `특수/일반/국제/행정구역분류`를 쫓아가게 되면,
+[한국행정구역분류](https://kssc.kostat.go.kr:8443/ksscNew_web/index.jsp)에서 대한 엑셀파일을 
+다운로드 받거나 웹화면으로 조회를 할 수도 있다. 결국  `.shp` 파일에 내재되어 있는 
+행정동 정보와 행정구역코드를 시도, 시군구, 읍면동으로 구분해 나갈 수 있다.
+
+행정안전부 행정동 전체 코드의 경우, 행정동 전체코드 및 법정동·행정동코드 매핑 자료는 
+행정안전부 지방행정실 홈페이지에서 자료를 제공하고 있다. [^hang-code]
+
+[^hang-code]: [지방자치분권실 - 주민등록 및 인감](http://www.mois.go.kr/frt/bbs/type001/commonSelectBoardList.do?bbsId=BBSMSTR_000000000052 )
+
+좌측 메뉴에서 "지방자치분권실" &rarr; "주민등록 및 인감" &rarr; "주민등록 및 인감" 을 따라 
+'주민등록 및 인감 게시판'에서 '주민등록주소코드 변경내역의 최신일자'로 된 제목을 클릭하여 압축파일을 다운로드한다.
+
+압축해제하게 되면 다음과 같은 형식의 파일이 압축이 풀려 디렉토리에 저장된다.
+
+- KiKcd_H.20140301(날짜) - 행정기관코드(전제 행정동코드) 
+- KiKcd_B.20140301(날짜) - 법정주소코드(전체 법정동코드) 
+- KiKmix.20140301(날짜) - 행정기관코드+법정주소코드(매핑코드) 
+
+주민등록주소코드 변경내역(2019.03.01. 시행) `jscode20190301.zip` 파일을 압축풀게 되면 
+`KIKcd_H.20190301.xlsx` 파일이 행정동 기준으로 나온다. 이를 활용하여 행정동코드를 확인할 수 있고 앞서 
+[대한민국 최신 행정구역(SHP) 다운로드](http://www.gisdeveloper.co.kr/?p=2332)에서 내려받은 `shapefile`과 연결하여 수월(?)하게 공간정보 관련 작업을 수행할 수 있게 된다.
+
+```{r hangcode-excel}
+library(readxl)
+
+h_code_df <- read_excel("data/shapefile/jscode20190301/KIKcd_H.20190301.xlsx", sheet='KIKcd_H')
+
+DT::datatable(h_code_df)
+
+```
+
