@@ -94,6 +94,30 @@ WGS84(WGS 1984, EPSG:4326, WGS84)는 세계 지구 좌표 시스템(World Geodet
     - `tmap`: [tmap: Thematic Maps](https://github.com/mtennekes/tmap)
     - `mapview`: [mapview: Interactive Viewing of Spatial Data in R](https://github.com/r-spatial/mapview)
 
+---
+
+<div class = "row">
+  <div class = "col-md-6">
+**`sp` - `sf` 이전 시절**
+
+`sp`, `rgdal`, `rgeos`를 결합하여 사용하던 옛시절이 있었다.
+
+- `sp`: 벡터 혹은 래스터 공간정보 데이터를 다루기 위한 기본 자료구조.
+- `rgdal`: `GDAL`/`OGR`을 바탕으로 공간데이터를 불러오고 저장하는 역할을 담당.
+- `rgeos`: 파이썬 `shapely`처럼 `GEOS`를 바탕으로 다양한 `geometry` 연산작업을 수행(`union`, `intersections`, `buffer` 등).
+
+  </div>
+  <div class = "col-md-6">
+  
+**`sf` 통일 시대**
+
+- 실세계에서 객체가 어떻게 표현되어야 하는지를 모사하는 `ISO 19125-1:2004` 표준 **`Simple Feature`**를 충실히 따름.
+- `sf`의 기본은 데이터프레임
+- `sp`, `rgdal`, `rgeos` 팩키지 모든 기능을 `sf` 하나에 담아냄.
+- `sp`, `rgdal` 보다 설치하기 쉽고 훨씬 더 빠르고 확장성이 뛰어남.
+
+  </div>
+</div>
 
 # 지도 데이터 {#geoinfo-shapefile}
 
