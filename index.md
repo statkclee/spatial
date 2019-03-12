@@ -19,6 +19,7 @@ title: 공간통계를 위한 데이터 과학
     - [우편번호/주소 지리정보 시각화 - `ggplot` + `ggmap`](geo-info-postcode.html)
     - [지진과 원전 - sf와 데이터프레임의 만남](geo-sf-dataframe.html)
 - [지리정보 - R](geo-spatial-r.html)
+    - [데이터프레임과 `shapefile` - `ggplot`, `sp`, `sf`](geo-dataframe-shapefile.html)
     - [`.shp` 지도 일부 추출](geo-info-shapefile.html)
     - [단계구분도(choropleth) 공간정보 시각화](geo-info-choropleth.html)
 - 물류 
