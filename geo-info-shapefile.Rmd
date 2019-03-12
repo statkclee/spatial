@@ -10,7 +10,7 @@ output:
     toc: yes
     toc_float: true
     highlight: tango
-    code_folding: hide
+    code_folding: show
     number_section: true
     self_contained: true
 editor_options: 
@@ -133,6 +133,8 @@ st_crs(emd_shp)
 
 # `ggplot` 시각화 {#geo-info-shapefile-ggplot}
 
+sf 데이터프레임을 shapefile 변환시키는데 `sf:::as_Spatial()` 함수를 사용한다. 혹은 `as(sungnam_df_shp, 'Spatial')`을 사용해도 좋다. 다음으로 `SpatialPolygonsDataFrame`을 데이터프레임으로 변환시킨다. 
+이를 `geom_path()`로 시각화한다.
 
 ```{r geo-info-shapefile-ggplot}
 sungnam_df_shp <-  emd_shp %>% 
@@ -141,17 +143,29 @@ sungnam_df_shp <-  emd_shp %>%
                                str_detect(EMD_CD, "^41135") ~ "분당구")) %>% 
     filter(!is.na(SIGUNGU))
 
-sungnam_df <- ggplot2::fortify(sungnam_df_shp)
+## sf 데이터프레임 --> shapefile 변환
+# sungnam_emd_shp <-  sf:::as_Spatial(sungnam_df_shp$geometry)
+sungnam_emd_shp <-  as(sungnam_df_shp, 'Spatial')
 
-ggplot() +
-geom_path(data = sungnam_df, 
-          aes(x = long, y = lat, group = group),
-          color = 'gray', fill = 'white', size = .2)
+class(sungnam_emd_shp)
 
-    ggplot(aes(x = long, y = lat, fill = region, group = group)) + 
-      geom_polygon(color = "white") +
-      coord_fixed(1.3) +
-      guides(fill=FALSE)
+## shapefile --> 데이터프레임 변환
+sungnam_emd_df <- fortify(sungnam_emd_shp)
+
+## ggplot 시각화
+sungnam_emd_df %>% 
+  ggplot(aes(x = long, y = lat, group = group)) +
+    geom_path(color = 'blue', size = .2) +
+    coord_fixed(1.3)
 ```
 
+다른 방식으로 `geom_polygon()` 함수를 사용해서 `ggplot` 시각화도 가능하다.
 
+```{r geo-info-shapefile-ggplot-polygon}
+sungnam_emd_df %>% 
+  ggplot(aes(x = long, y = lat, group = group)) +
+    geom_polygon(color = "white", fill="skyblue") +
+    coord_fixed(1.3) +
+    guides(fill=FALSE) +
+    theme_void()  
+```
