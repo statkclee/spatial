@@ -97,12 +97,40 @@ WGS84(WGS 1984, EPSG:4326, WGS84)는 세계 지구 좌표 시스템(World Geodet
 
 # 지도 데이터 {#geoinfo-shapefile}
 
+- `GADM`: [GADM maps and data](https://gadm.org/)
+    - level-0, level-1, level-2
+    - Geopackage
+    - Shapefile
+    - R (`sp`)
+    - R (`sf`)
 - `tigris`: [Census TIGER/Line shapefiles](https://github.com/walkerke/tigris)
 - `rworldmap`: [Mapping Global Data](https://github.com/AndySouth/rworldmap)
 - [대한민국 최신 행정구역(SHP) 다운로드](http://www.gisdeveloper.co.kr/?p=2332): 시도, 시군구, 읍면동, 리
 - [대한민국 행정동 경계(admdongkor)](https://github.com/vuski/admdongkor)
     - `geojson`  파일형식, 좌표계는 WGS84 (EPSG:4326), 인코딩 UTF-8.
 - [국토정보플랫폼 - 국토교통부 국토지리정보원 운영](http://map.ngii.go.kr/mn/mainPage.do)
+
+## `GADM` 지도 데이터 {#geoinfo-shapefile-gadm}
+
+[Download GADM data (version 3.6)](https://gadm.org/download_country_v3.html) 웹사이트에서 레벨2(level-2)까지 시군구 데이터를 불러온다. `sf` 팩키지로 바로 작업할 수 있도록 `R (sf)` **level2**를 다운로드 받아 시각화한다.
+
+- R (sf): level-0, level1, **level2**
+
+```{r gadm-3-6-korea}
+library(tidyverse)
+library(sf)
+
+korea_sf <- read_rds("data/shapefile/gadm36_KOR_2_sf.rds")
+
+st_crs(korea_sf)
+
+head(korea_sf)
+
+korea_sf %>% 
+  select(GID_0) %>% 
+  plot()
+```
+
 
 # 행정동 전체코드 [^hang-code-faq] {#geo-info-shapefile-code}
 
