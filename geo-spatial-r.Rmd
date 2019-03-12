@@ -26,9 +26,11 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
                     comment="", digits = 3, tidy = FALSE, prompt = FALSE, fig.align = 'center')
 ```
 
-# 지리정보 파일 [^data-carpentry-shapefile] {#geoinfo-filename}
+# 지리정보 파일 [^data-carpentry-shapefile] [^vector-raster] {#geoinfo-filename}
 
 [^data-carpentry-shapefile]: [Data Carpentry, "Introduction to Geospatial Raster and Vector Data with R"](https://datacarpentry.org/r-raster-vector-geospatial/)
+
+[^vector-raster]: [Justina Hensley, "Spatial data models (types)"](https://slideplayer.com/slide/6152526/)
 
 전통적으로 지리정보는 `.shp` 확장자명을 갖는 ESRI Shapefile에 저장을 했다.
 `*.shp`, `*.dbf`, `*.shx` 파일이 나눠서 저장되어 있다. 이로 인해서 ESRI Shapefile 지도정보 파일은
@@ -46,10 +48,13 @@ R 에서 ESRI Shapefile 파일을 저장하면 S4 `SpatailPolygonsDataFrame`으�
 하나는 벡터(vector)로 표현하는 것이고 `OGR`을 사용하고, 또 다른 하나는 격자(Grid), 래스터(raster)로 
 표현하는 것으로 `GDAL`을 아래에 각각 깔고 R로 불러와서 사용하게 된다.
 
+<img src="fig/vector-raster.png" alt="벡터, 래스터" width="50%" />
 
-# 좌표계(CRS) [^korean-crs] {#geoinfo-CRS}
+# 좌표계(CRS) [^korean-crs] [^crs-concept] {#geoinfo-CRS}
 
 [^korean-crs]: [OSGeo(Open Source GeoSpatial) 한국어 지부 - OSGeo Korean Chapter, "한국 주요 좌표계 EPSG코드 및 proj4 인자 정리""](https://www.osgeo.kr/17)
+
+[^crs-concept]: [Wolfgang SCHEUCHER (Solitec), "Coordinate Reference System"](https://ext.eurocontrol.int/aixm_confluence/display/ACG/Coordinate+Reference+System)
 
 좌표계(CRS, Coordinate Reference System)는 둥근 지구를 2차원 평면에 투영(projection)하는 다양한 방법을 지칭한다.
 좌표계를 제작할 때 각기 다른 목적에 맞춰 제작되었기 때문에 지리정보를 활용함에 있어 적절한 좌표계를 채택하여활용하는 것이 중요하다.
@@ -77,6 +82,8 @@ WGS84(WGS 1984, EPSG:4326, WGS84)는 세계 지구 좌표 시스템(World Geodet
 [^kakao-api-crs]: [Kakao DevTalk, "다음지도 좌표계 관련"](https://devtalk.kakao.com/t/topic/35844)
 
 [^naver-crs]: [VISUALIZING STORY - STORY ABOUT TRUTH AND LIFE, "한국 주요 좌표계 EPSG코드 및 PROJ4 인자정리"](https://visualizingstory.wordpress.com/2013/04/24/%ED%95%9C%EA%B5%AD-%EC%A3%BC%EC%9A%94-%EC%A2%8C%ED%91%9C%EA%B3%84-epsg%EC%BD%94%EB%93%9C-%EB%B0%8F-proj4-%EC%9D%B8%EC%9E%90-%EC%A0%95%EB%A6%AC/#respond)
+
+<img src="fig/ellipsoidal_coordinate_system.png" alt="좌표계 변환" width="100%" />
 
 # R 팩키지 {#geoinfo-packages}
 
@@ -140,7 +147,7 @@ WGS84(WGS 1984, EPSG:4326, WGS84)는 세계 지구 좌표 시스템(World Geodet
 
 - R (sf): level-0, level1, **level2**
 
-```{r gadm-3-6-korea}
+```{r gadm-3-6-korea, eval=FALSE}
 library(tidyverse)
 library(sf)
 
