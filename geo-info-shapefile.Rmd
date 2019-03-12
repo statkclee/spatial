@@ -54,6 +54,7 @@ sigungu_shp$SIG_KOR_NM <- iconv(sigungu_shp$SIG_KOR_NM, from = "CP949", to = "UT
 
 ## 시각화
 sigungu_shp %>% 
+  filter(str_detect(SIG_CD, "^42")) %>% 
   select(SIG_KOR_NM) %>% 
   plot()
 ```
@@ -129,4 +130,28 @@ st_write(sungnam_emd_shp, "data/shapefile/SIG_201902/sungnam/sungnam_emd.shp", d
 st_crs(sigungu_shp)
 st_crs(emd_shp)
 ```
+
+# `ggplot` 시각화 {#geo-info-shapefile-ggplot}
+
+
+```{r geo-info-shapefile-ggplot}
+sungnam_df_shp <-  emd_shp %>% 
+    mutate(SIGUNGU = case_when(str_detect(EMD_CD, "^41131") ~ "수정구",
+                               str_detect(EMD_CD, "^41133") ~ "중원구",
+                               str_detect(EMD_CD, "^41135") ~ "분당구")) %>% 
+    filter(!is.na(SIGUNGU))
+
+sungnam_df <- ggplot2::fortify(sungnam_df_shp)
+
+ggplot() +
+geom_path(data = sungnam_df, 
+          aes(x = long, y = lat, group = group),
+          color = 'gray', fill = 'white', size = .2)
+
+    ggplot(aes(x = long, y = lat, fill = region, group = group)) + 
+      geom_polygon(color = "white") +
+      coord_fixed(1.3) +
+      guides(fill=FALSE)
+```
+
 
