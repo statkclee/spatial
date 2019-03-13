@@ -234,7 +234,7 @@ korea_sf <- st_read("data/shapefile/CTPRVN_201902/TL_SCCO_CTPRVN.shp")
 korea_sf$CTP_KOR_NM <- iconv(korea_sf$CTP_KOR_NM, from = "CP949", to = "UTF-8", sub = NA, mark = TRUE, toRaw = FALSE)
 
 ## 좌표계 변경
-st_transform(korea_sf, "+proj=longlat +datum=WGS84")
+korea_sf <- st_transform(korea_sf, "+proj=longlat +datum=WGS84")
 
 ## 시각화 
 korea_sf %>% 
@@ -258,7 +258,7 @@ korea_df
 library(httr)
 library(rvest)
 
-Sys.setlocale("LC_ALL", "C")
+# Sys.setlocale("LC_ALL", "C")
 
 wiki_url <- 'https://ko.wikipedia.org/wiki/%EB%8C%80%ED%95%9C%EB%AF%BC%EA%B5%AD%EC%9D%98_%ED%96%89%EC%A0%95_%EA%B5%AC%EC%97%AD'
 
@@ -267,7 +267,7 @@ pop_dat <- wiki_url %>%
   html_node(xpath='//*[@id="mw-content-text"]/div/table[3]') %>% 
   html_table(fill=TRUE)
 
-Sys.setlocale("LC_ALL", "Korean")
+# Sys.setlocale("LC_ALL", "Korean")
 
 pop_df <- pop_dat %>% 
   rename(CTP_KOR_NM = `행정 구역`) %>% 
@@ -336,6 +336,5 @@ library(leaflet)
 
 leaflet(korea_sf) %>%
   addTiles() %>% 
-  # setView(lng = -106.363590, lat=31.968483, zoom=11) %>% 
   addPolygons(weight=5,col = 'red')
 ```
