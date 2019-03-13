@@ -218,11 +218,14 @@ korea + geom_polygon(aes(x=long,y=lat, group=group, fill=population), data=korea
 
 # 행정지도 + 데이터프레이 {#choropleth-in-practice}
 
-<img src="fig/spatial-join.png" alt="결합(Join)" width="100%" />
+행정지도에 각시도별 인구수 정보가 담겨있는 데이터프레임을 결합시켜서 인터랙티브 지도에 겹쳐보이려면 몇가지 사전작업이 필요하다. `leaflet`은 웹 메르카도(web mercator)를 사용하있어 좌표계도 변환시켜야 하고, 인코딩도 변경시켜야 한다. 
+
+<img src="fig/spatial-join.png" alt="결합(Join)" width="77%" />
 
 ## 행정지도 `shapefile` {#choropleth-shapefile}
 
 [대한민국 최신 행정구역(SHP) 다운로드](http://www.gisdeveloper.co.kr/?p=2332) 웹사이트에서 "시도" `shapefile`을 다운로드 받아 시도 지리정보를 시각화할 수 있는 지도를 준비한다.
+
 
 ```{r choropleth-shapefile}
 library(tidyverse)
@@ -233,7 +236,7 @@ korea_sf <- st_read("data/shapefile/CTPRVN_201902/TL_SCCO_CTPRVN.shp")
 ## 인코딩 변경
 korea_sf$CTP_KOR_NM <- iconv(korea_sf$CTP_KOR_NM, from = "CP949", to = "UTF-8", sub = NA, mark = TRUE, toRaw = FALSE)
 
-## 좌표계 변경
+## 좌표계 변경: 웹 메르카도(web mercator)
 korea_sf <- st_transform(korea_sf, "+proj=longlat +datum=WGS84")
 
 ## 시각화 
@@ -258,7 +261,7 @@ korea_df
 library(httr)
 library(rvest)
 
-# Sys.setlocale("LC_ALL", "C")
+Sys.setlocale("LC_ALL", "C")
 
 wiki_url <- 'https://ko.wikipedia.org/wiki/%EB%8C%80%ED%95%9C%EB%AF%BC%EA%B5%AD%EC%9D%98_%ED%96%89%EC%A0%95_%EA%B5%AC%EC%97%AD'
 
@@ -267,7 +270,7 @@ pop_dat <- wiki_url %>%
   html_node(xpath='//*[@id="mw-content-text"]/div/table[3]') %>% 
   html_table(fill=TRUE)
 
-# Sys.setlocale("LC_ALL", "Korean")
+Sys.setlocale("LC_ALL", "Korean")
 
 pop_df <- pop_dat %>% 
   rename(CTP_KOR_NM = `행정 구역`) %>% 
@@ -328,13 +331,76 @@ tm_shape(korea_pop_sf) +
 ```
 
 
-## 인터랙티브 지도 - `leaflet`  {#choropleth-dataframe-join-viz-interactive-leaflet}
+## 인터랙티브 지도 - `leaflet` [^interactive-leaflet] {#choropleth-dataframe-join-viz-interactive-leaflet}
 
+[^interactive-leaflet]: [Leaflet for R, "Choropleths"](https://rstudio.github.io/leaflet/choropleths.html)
+
+[Leaflet for R, "Choropleths"](https://rstudio.github.io/leaflet/choropleths.html)을 참조하여 팔레트도 달리 구성하고 라벨도 붙여 인터랙티브 방식으로 주제도를 통해 시도별 인구수를 지리공간정보로 시각화한다.
 
 ```{r choropleth-dataframe-viz-interactive-leaflet}
 library(leaflet)
 
-leaflet(korea_sf) %>%
+## 팔레트
+pop_bins <- c(0, 2500000, 5000000, 7500000, 10000000, Inf)
+pop_pal  <- colorBin("YlOrRd", domain = korea_pop_sf$`인구`, bins = pop_bins)
+
+## 라벨
+pop_labels <- sprintf(
+  "<strong>%s</strong><br/>%g Million</sup>",
+  korea_pop_sf$CTP_KOR_NM, korea_pop_sf$`인구`/10^6
+) %>% lapply(htmltools::HTML)
+
+leaflet(korea_pop_sf) %>%
   addTiles() %>% 
-  addPolygons(weight=5,col = 'red')
+  addPolygons(opacity = 1.0, fillOpacity = 0.5,
+              weight = 1,
+              fillColor = ~pop_pal(`인구`),
+              highlightOptions = highlightOptions(color = "black", weight = 3,  bringToFront = TRUE),
+              label = pop_labels,
+              labelOptions = labelOptions(
+              style = list("font-weight" = "normal", padding = "3px 8px"),
+              textsize = "15px",
+              direction = "auto")) %>% 
+    addLegend("bottomright", pal = pop_pal, values = ~`인구`,
+    title = "시도 인구",
+    labFormat = labelFormat(suffix = "명"),
+    opacity = 1)
+
+? labelFormat
+
+```
+
+
+## 인터랙티브 종합 {#choropleth-dataframe-join-viz-interactive-leaflet-all}
+
+[공공기관 인터랙티브 시각화](https://statkclee.github.io/spatial/geo-info-postcode.html#3_%EA%B3%B5%EA%B3%B5%EA%B8%B0%EA%B4%80_%EC%A7%80%EB%A6%AC%EC%A0%95%EB%B3%B4_%EC%8B%9C%EA%B0%81%ED%99%94)에서 `addMarkers()` 함수로 전국 검찰청 위치를 가져온 것을 주제도 `shapefile`과 결합시켜 인구수와 결합하여 공공기관(검찰) 위치를 지도위에 시각화한다.
+
+
+```{r choropleth-dataframe-viz-interactive-leaflet-all}
+addr_df  <- read_rds('data/addr_df.rds')
+
+leaflet(korea_pop_sf) %>%
+  addTiles() %>% 
+  addPolygons(opacity = 1.0, fillOpacity = 0.5,
+              weight = 1,
+              fillColor = ~pop_pal(`인구`),
+              highlightOptions = highlightOptions(color = "black", weight = 3,  bringToFront = TRUE),
+              label = pop_labels,
+              labelOptions = labelOptions(
+              style = list("font-weight" = "normal", padding = "3px 8px"),
+              textsize = "15px",
+              direction = "auto")) %>% 
+    addLegend("bottomright", pal = pop_pal, values = ~`인구`,
+    title = "시도 인구",
+    labFormat = labelFormat(suffix = "명"),
+    opacity = 1) %>% 
+  addProviderTiles(providers$OpenStreetMap) %>% 
+  addMarkers(data=addr_df, lng=~lon, lat=~lat, clusterOptions = markerClusterOptions(),
+                   popup = ~ as.character(paste0("<strong>", paste0(`유형_1`,":",`기관코드`), "</strong><br>",
+                                                 "-----------------------------------------------------------<br>",
+                                                 "&middot; 검찰기관명: ", `최하위기관명`, "<br>",
+                                                 "&middot; 전화번호: ", `대표전화번호`, "<br>",
+                                                 "&middot; 새우편번호: ", `새우편번호`, "<br>",
+                                                 "&middot; 도로명 주소: ", `도로명주소`, "<br>"
+                   ))) 
 ```
