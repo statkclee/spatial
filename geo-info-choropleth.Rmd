@@ -27,12 +27,6 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
 ```
 
 
-> ## 학습 목표 {.objectives}
->
-> * 단계구분도를 이해한다.
-> * 대한민국인구를 단계구분도를 사용하여 지리정보 시각화한다.
-> * 단계구분도 전용 R 팩키지와 그래프 문법 ggplot 팩키지로 지리정보를 시각화한다.
-
 # 단계구분도(choropleth) {#choropleth-overview}
 
 [단계구분도(Choropleth map)](https://en.wikipedia.org/wiki/Choropleth_map)는 
@@ -221,3 +215,127 @@ korea + geom_polygon(aes(x=long,y=lat, group=group, fill=population), data=korea
 
 <img src="fig/geo-choropleth-ggmap.png" alt="2010년 인구 단계구분도" width="100%" />
 
+
+# 행정지도 + 데이터프레이 {#choropleth-in-practice}
+
+<img src="fig/spatial-join.png" alt="결합(Join)" width="100%" />
+
+## 행정지도 `shapefile` {#choropleth-shapefile}
+
+[대한민국 최신 행정구역(SHP) 다운로드](http://www.gisdeveloper.co.kr/?p=2332) 웹사이트에서 "시도" `shapefile`을 다운로드 받아 시도 지리정보를 시각화할 수 있는 지도를 준비한다.
+
+```{r choropleth-shapefile}
+library(tidyverse)
+library(sf)
+
+korea_sf <- st_read("data/shapefile/CTPRVN_201902/TL_SCCO_CTPRVN.shp")
+
+## 인코딩 변경
+korea_sf$CTP_KOR_NM <- iconv(korea_sf$CTP_KOR_NM, from = "CP949", to = "UTF-8", sub = NA, mark = TRUE, toRaw = FALSE)
+
+## 좌표계 변경
+st_transform(korea_sf, "+proj=longlat +datum=WGS84")
+
+## 시각화 
+korea_sf %>% 
+  select(CTP_KOR_NM) %>% 
+  plot()
+
+## 병합을 위한 변수명 - 데이터프레임
+korea_df <- korea_sf %>% 
+  st_set_geometry(NULL)
+
+korea_df
+```
+
+
+## 데이터프레임 - 시도별 인구 {#choropleth-dataframe}
+
+[위키백과 - 대한민국의 행정 구역](https://ko.wikipedia.org/wiki/%EB%8C%80%ED%95%9C%EB%AF%BC%EA%B5%AD%EC%9D%98_%ED%96%89%EC%A0%95_%EA%B5%AC%EC%97%AD)에서 시도별 인구수를 대한민국 지도위에 단계구분도로 색칠하는 것을 목표로 데이터를 스크랩핑하여 가져온다.
+
+
+```{r choropleth-dataframe}
+library(httr)
+library(rvest)
+
+Sys.setlocale("LC_ALL", "C")
+
+wiki_url <- 'https://ko.wikipedia.org/wiki/%EB%8C%80%ED%95%9C%EB%AF%BC%EA%B5%AD%EC%9D%98_%ED%96%89%EC%A0%95_%EA%B5%AC%EC%97%AD'
+
+pop_dat <- wiki_url %>% 
+  read_html() %>% 
+  html_node(xpath='//*[@id="mw-content-text"]/div/table[3]') %>% 
+  html_table(fill=TRUE)
+
+Sys.setlocale("LC_ALL", "Korean")
+
+pop_df <- pop_dat %>% 
+  rename(CTP_KOR_NM = `행정 구역`) %>% 
+  mutate(`인구` = parse_number(`인구`)) %>% 
+  filter(!str_detect(CTP_KOR_NM, "계")) %>% 
+  select(CTP_KOR_NM, `인구`)
+
+DT::datatable(pop_df)
+```
+
+
+## `sf` 지도와 데이터프레임 결합 {#choropleth-dataframe-join}
+
+`dplyr` 데이터프레임 2개를 위한 동사 `left_join()` 함수를 사용해서 `sf` 지도객체와 데이터프레임을 결합(join) 시킨다.
+
+```{r choropleth-dataframe-join}
+korea_pop_sf  <- korea_sf %>% left_join(pop_df, by = "CTP_KOR_NM")
+korea_pop_sf
+
+## sf 파일 크기 줄이기 --------
+# korea_pop_sf <- st_simplify(korea_pop_sf, dTolerance = 100)
+```
+
+## 시도별 인구수 시각화 - `ggplot` {#choropleth-dataframe-join-viz}
+
+`geom_sf()` 함수를 사용해서 시도별 인구수를 친숙한 `ggplot` 문법에 맞춰 작성하고 단계구분도로 시각화한다.
+
+
+```{r choropleth-dataframe-viz}
+library(extrafont)
+loadfonts()
+
+korea_pop_sf %>% 
+  ggplot(aes(fill=`인구`)) +
+    geom_sf() +
+    theme_void(base_family="NanumGothic") +
+    labs(title="시도별 인구수", fill="인구수") + 
+    theme(legend.position = "right") +
+    scale_fill_gradient(low = "wheat1", high = "red", labels = scales::comma)
+```
+
+
+## 인터랙티브 주제도 - `tmap`  {#choropleth-dataframe-join-viz-interactive}
+
+단계구분도를 `tmap`, 주제도(thematic map)로 인구밀도, 1인당 소득 같은 정보를 비례하여 음영처리나 패턴을 넣어 지도상에 표현하는데 적합하다. 
+
+```{r choropleth-dataframe-viz-interactive}
+library(tmap)
+
+tmap_mode("view")
+
+tm_shape(korea_pop_sf) +
+  tm_borders(col = "grey60", lwd = 0.5) +
+  tm_fill(col= "인구",
+          title= "시도 인구",
+          popup.vars=c("CTP_KOR_NM", "인구")) +
+  tm_text(text = "CTP_KOR_NM")
+```
+
+
+## 인터랙티브 지도 - `leaflet`  {#choropleth-dataframe-join-viz-interactive-leaflet}
+
+
+```{r choropleth-dataframe-viz-interactive-leaflet}
+library(leaflet)
+
+leaflet(korea_sf) %>%
+  addTiles() %>% 
+  # setView(lng = -106.363590, lat=31.968483, zoom=11) %>% 
+  addPolygons(weight=5,col = 'red')
+```
