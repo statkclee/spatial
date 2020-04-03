@@ -25,4 +25,122 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
 ```
 
 
-# 
+# 2D 히스토그램: `hexbin` {#hexbin-pkg}
+
+`hexbin` 팩키지는 `Hexagon Binning`을 통해 2차원 평면에 히스토그램을 육각형 도형으로 표현하는 시각화 도구로 매우 큰 데이터를 시각화하는데 유용하다. 기본 알고리즘은 다음과 같다.
+
+1. the xy plane over the set (range(x), range(y)) is tessellated by a regular
+grid of hexagons.
+1. the number of points falling in each hexagon are counted and stored in a
+data structure
+1. the hexagons with count > 0 are plotted using a color ramp or varying
+the radius of the hexagon in proportion to the counts.
+
+
+<div class = "row">
+  <div class = "col-md-6">
+**Base R**
+
+```{r make-hexbin-chart}
+library(tidyverse)
+library(hexbin)
+
+# Create data
+hex_df <- tibble(x = rnorm(mean=1.5, 5000),
+                 y = rnorm(mean=1.6, 5000))
+
+# Make the plot
+bin <- hexbin(hex_df$x, hex_df$y, xbins=40)
+plot(bin, main="") 
+```
+
+  </div>
+  <div class = "col-md-6">
+**`ggplot2`**
+
+```{r make-hexbin-chart-ggplot}
+# Make the ggplot
+hex_df %>% 
+  ggplot(aes(x=x, y=y)) +
+    geom_hex() +
+    scale_fill_viridis_c(name="Frequency")
+```
+
+  </div>
+</div>
+
+# R 스티커 {#tidyverse-r-stikcer}
+
+[Hexagon sticker in R](https://github.com/GuangchuangYu/hexSticker) 제작도구가 있어 [Tidyverse Korea](https://www.facebook.com/groups/tidyverse/) 미트업에 사용할 로고를 제작해본다.
+
+```{r how-to-develop-stikcer}
+# install.packages("hexSticker")
+library(hexSticker)
+library(showtext)
+font_add_google("Nanum Gothic", "NanumGothic")
+
+p <- ggplot(aes(x = mpg, y = wt), data = mtcars) + geom_point()
+p <- p + theme_void() + theme_transparent()
+
+sticker("fig/Taegeuk.png", package="서울 KRUG", p_family="NanumGothic", p_size=6.5, p_color="#3d3838",
+        s_x=1, s_y=.65, s_width=0.45, s_height=0.45,
+         h_fill="#d9d9d9", h_color="#636363", spotlight = TRUE, 
+        filename="fig/KRUG_Seoul.png")
+```
+
+![KRUG 서울 R 스티커](fig/KRUG_Seoul.png)
+
+# 지도 &rarr; 육각형 [^hexmaper-England] [^geogrid-package] {#hexmaper-England}
+
+[^hexmaper-England]: [Simon Hailstone (2 November 2017), "Playing with the hexmapr and fingertipsR packages"](https://rpubs.com/Hailstone/326118)
+
+[^geogrid-package]: [`geogrid`: Turning geospatial polygons into regular or hexagonal grids
+](https://github.com/jbaileyh/geogrid)
+
+[`geogrid`: Turning geospatial polygons into regular or hexagonal grids
+](https://github.com/jbaileyh/geogrid) 팩키지에 내장된 영국 런던 데이터를 대상으로 원본 지도와 육각형으로 변환시킨 지도를 도식화해서 가능성을 타진한다.
+
+```{r setup-environment-london}
+library(geogrid)
+library(sf)
+library(tmap)
+
+input_file <- system.file("extdata", "london_LA.json", package = "geogrid")
+original_shapes <- st_read(input_file) %>% st_set_crs(27700)
+original_shapes$SNAME <- substr(original_shapes$NAME, 1, 4)
+```
+
+
+<div class = "row">
+  <div class = "col-md-6">
+**원본 데이터**
+
+```{r geogrid-conversion-original}
+raw_plot <- tm_shape(original_shapes) + 
+  tm_polygons("HECTARES", palette = "viridis") +
+  tm_text("SNAME")
+raw_plot
+```
+
+
+  </div>
+  <div class = "col-md-6">
+**육각형 변환 지도**
+
+```{r hexplot-london-calculate}
+## 변환
+london_hex <- calculate_grid(shape = original_shapes, grid_type = "hexagonal", seed = 3)
+london_hex_map <- assign_polygons(original_shapes, london_hex)
+
+hex_plot <- tm_shape(london_hex_map) + 
+  tm_polygons("HECTARES", palette = "viridis") +
+  tm_text("SNAME")
+
+hex_plot
+```
+
+  </div>
+</div>
+
+
+
