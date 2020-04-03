@@ -22,14 +22,15 @@ title: 공간통계를 위한 데이터 과학
     - [데이터프레임과 `shapefile` - `ggplot`, `sp`, `sf`](geo-dataframe-shapefile.html)
     - [`.shp` 지도 일부 추출](geo-info-shapefile.html)
     - [단계구분도(choropleth) 공간정보 시각화](geo-info-choropleth.html)
-- 물류 
-    - [R 연습문제 - 지도](geo-r-exercise.html)
-    - [GPS 데이터 이동경로 시각화](geo-gps-map.html)
+- [육각형(Hexagon) 지도](spatial-hexagon.html)
 - tidyverse 공간 데이터 분석 
     - [제6회 지방선거 - 광역단체장](spatial-jibang-sido.html)
     - [제6회 지방선거 - 기초자치단체장](spatial-jibang-govenment.html)
     - [경기도 대통령선거 - `geofacet`](spatial-jibang-geofacet.html)
     - [시도별 실업률 추세 - `geofacet`](spatial-jibang-unemp.html)
+- 물류 
+    - [R 연습문제 - 지도](geo-r-exercise.html)
+    - [GPS 데이터 이동경로 시각화](geo-gps-map.html)
 - 오래된 코드
     - [Kormaps, leaflet 지리정보 시각화 기초](geo-info-kormaps.html)
     - [생활안전 - 보호관찰소와 범죄](geo-info-crime.html)     
