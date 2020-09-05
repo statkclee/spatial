@@ -153,6 +153,21 @@ R에서 공간 지리 통계 및 공간 지리 데이터를 다루는 팩키는 
   </div>
 </div>
 
+## 공간지도 R 팩키지 스티커 {#rspatial-stickers}
+
+[`stickr`]()
+
+```{r install-sticker}
+library(stickr)
+library(magick)
+
+sf_sticker <- stickr_get("sf", view=FALSE)
+
+image_read(sf_sticker) %>% 
+  image_resize("33%")
+```
+
+
 # 지도 데이터 {#geoinfo-shapefile}
 
 - `GADM`: [GADM maps and data](https://gadm.org/)
@@ -190,7 +205,7 @@ korea_sf %>%
 ```
 
 
-# 행정동 전체코드 [^hang-code-faq] {#geo-info-shapefile-code}
+## 행정동 전체코드 [^hang-code-faq] {#geo-info-shapefile-code}
 
 [^hang-code-faq]: [행정표준코드관리시스템](https://www.code.go.kr/index.do)
 
@@ -233,5 +248,11 @@ DT::datatable(h_code_df)
 ```
 
 
+# `rspatial` 생태계 [^recent-change-rspatial] {#all-about-rspatial-ecosystem}
 
+[^recent-change-rspatial]: [J. Nowosad, R. Lovelace (2020), "Recent changes in R spatial and how to be ready for them", Why R](https://nowosad.github.io/whyr_webinar004/)
+
+과거 많이 생산된 ESRI `.shp` 지도데이터와 표준으로 자리잡고 있는 `.gpkg` 파일을 `read_sf()` 함수로 불러 읽어들인다. 그리고 나서 `tmap` 팩키지의 다양한 지도 생성 동사를 동원하여 빠르게 시각화한다.
+
+![](fig/rspatial-ecosystem.png)
 
