@@ -1,0 +1,165 @@
+---
+layout: page
+title: "공간통계를 위한 데이터 사이언스"
+subtitle: "지도 데이터: `GADM` - 행정 지도"
+author:
+  name: "[Tidyverse Korea](https://www.facebook.com/groups/tidyverse/)"
+  url: https://www.facebook.com/groups/tidyverse/
+  affiliation: Tidyverse Korea
+  affiliation_url: https://www.facebook.com/groups/tidyverse/
+date: "`r Sys.Date()`"
+output:
+  html_document: 
+    include:
+      after_body: footer.html
+      before_body: header.html
+    theme: journal
+    toc: yes
+    toc_depth: 2
+    toc_float: true
+    highlight: tango
+    code_folding: show
+    number_section: true
+    self_contained: true
+bibliography: bibliography_spatial.bib
+csl: biomed-central.csl
+urlcolor: blue
+linkcolor: bluee
+editor_options: 
+  chunk_output_type: console
+---
+ 
+``` {r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE,
+                      comment="", digits = 3, tidy = FALSE, prompt = FALSE, fig.align = 'center')
+```
+
+
+# 행정지도 데이터 {#gadm-download}
+
+[GADM maps and data](https://gadm.org/index.html)은 전세계 모든 국가 행정구역을 지도에 담고 있다. 이를 직접 웹사이트에서 다운로드 받아도 좋지만 [`GADMTools: Easy Use of 'GADM' Maps`](https://cran.r-project.org/web/packages/GADMTools/) 팩키지를 사용하면 수월하게 활용이 가능하다.
+
+## 설치 {#gadm-download-install}
+
+CRAN에 등록되어 있어 [`GADMTools`](https://cran.r-project.org/web/packages/GADMTools/)를 설치하면 된다.
+
+```{r install-GADM, eval = FALSE}
+install.packages("GADMTools")
+```
+
+## 헬로월드 {#gadm-download-helloworld}
+
+`maps` 팩키지에 내장된 전세계 도시 정보를 바탕으로 이야기를 풀어가자.
+
+
+```{r helloworld-gadm}
+library(countrycode)
+library(GADMTools)
+library(tidyverse)
+library(sf)
+
+world_cities <- maps::world.cities %>% 
+  as_tibble()
+
+korea_cities <- world_cities %>% 
+  filter(str_detect(country.etc, "[Kk]orea South")) %>% 
+  mutate(pop = pop / 10^4)
+
+korea_cities
+```
+
+대한민국 지도를 다운로드 받아 `shapefliles/` 디렉토리로 이동시킨다.
+
+```{r helloworld-gadm-world-cities}
+dir.create("shapefiles")
+sigungu_shp <- gadm_sp_loadCountries(fileNames = 'KOR', level = 2, basefile = './shapefiles', simplify=0.01)
+fs::file_move("./shapefilesKOR_adm2.rds", "shapefiles/")
+```
+
+다운로드 받은 shapefile을 불러와서 이를 시각화해서 제대로 다운로드 받았는지 확인한다.
+
+```{r helloworld-gadm-world-cities-plot}
+sigungu_shp <- read_rds("shapefiles/shapefilesKOR_adm2.rds")
+
+sigungu_shp$NL_NAME_1 <- iconv(sigungu_shp$NL_NAME_1, from = "CP949", to = "UTF-8", sub = NA, mark = TRUE, toRaw = FALSE)
+
+plot(sigungu_shp)
+```
+
+다음으로 `shapefile`을 `sf` 객체로 변환시킨 후에 `ggplot`을 지도를 시각화하고 인구를 `geom_point()`로 지도위에 올린다.
+
+```{r helloworld-gadm-world-cities-pop}
+sigungu_sf <- st_as_sf(sigungu_shp)
+
+ggplot(sigungu_sf) +
+  geom_sf() +
+  geom_point(data=korea_cities, aes(x=long, y=lat, size = pop), color = 'red', alpha = 0.5) +
+  labs(size="인구(만명)", x="", y="")
+```
+
+
+# 시도별 의사수 {#gadm-download-doctor}
+
+## 시도 지도 데이터 {#gadm-download-sido-map}
+
+먼저 시도 지도 데이터를 다운로드 받는다.
+
+
+```{r download-sido-shapefile}
+sido_shp <- gadm_sp_loadCountries(fileNames = 'KOR', level = 1, basefile = './shapefiles', simplify=0.01)
+fs::file_move("./shapefilesKOR_adm1.rds", "shapefiles/")
+sido_shp <- read_rds("shapefiles/shapefilesKOR_adm1.rds")
+
+sido_sf <- st_as_sf(sido_shp)
+plot(sido_sf)
+```
+
+## 시도별 의사수 {#gadm-download-sido-doctor}
+
+KOSIS에서 [`시도별 의료인력 현황`](https://kosis.kr/statHtml/statHtml.do?orgId=350&tblId=TX_35003_A003) 자료를 다운로드 받아 전체 의료인수를 시도별로 정리한다.
+
+```{r download-doctors}
+library(readxl)
+
+doctor_dat <- read_excel("data/시도별_의료인력_현황_20200905224937.xlsx", sheet= "데이터", skip = 3)
+
+doctor_df <- doctor_dat %>% 
+  select(1,2,3) %>% 
+  set_names(c("시도", "시도명", "의사수")) %>% 
+  arrange(desc(의사수))
+
+doctor_df
+```
+
+
+## 데이터 병합 {#gadm-download-sido-doctor-merge}
+
+"시도명"을 기준변수로 삼아 지도와 의사 데이터프레임(`doctor_df`)를 병합시킨다.
+
+```{r merge-sido-doctor}
+sido_doctor_sf <- sido_sf %>% 
+  select(GID_0, NL_NAME_1, geometry) %>% 
+  separate(NL_NAME_1, into = c("시도명", "구분자", "한자명"), sep =" ") %>% 
+  mutate(`시도명` = str_remove_all(`시도명`, " ")) %>% 
+  left_join(doctor_df, by="시도명") 
+
+sido_doctor_sf
+```
+
+
+## 의사수 시각화 {#gadm-download-sido-doctor-viz}
+
+`ggplot`의 `geom_sf()`를 사용해서 시각화를 한다. 
+`sido_doctor_sf`은 list-column으로 `geometry` 지도 정보를 담고 있는 데이터프레임이다.
+
+
+```{r merge-sido-doctor-visualize}
+sido_doctor_sf %>% 
+  ggplot(aes(fill=의사수)) +
+    geom_sf() +
+    theme_bw(base_family="NanumGothic") +
+    labs(title="시도별 의사수") + 
+    theme(legend.position = "right") +
+    scale_fill_gradient(low = "wheat1", high = "red", name = "의사수", labels = scales::comma)
+```
+

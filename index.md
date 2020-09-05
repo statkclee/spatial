@@ -14,11 +14,13 @@ title: 공간통계를 위한 데이터 과학
 
 ## 학습목차 
 
+- [지리정보 - R](geo-spatial-r.html)
 - [공간 통계 - 지리정보](geo-info.html)
     - [지리정보 API - 주소와 위도경도](geo-info-lonlat.html)
     - [우편번호/주소 지리정보 시각화 - `ggplot` + `ggmap`](geo-info-postcode.html)
     - [지진과 원전 - sf와 데이터프레임의 만남](geo-sf-dataframe.html)
-- [지리정보 - R](geo-spatial-r.html)
+- 지리정보 데이터
+    - [지도 데이터: `GADM` - 행정 지도](geo-gadm.html)
     - [데이터프레임과 `shapefile` - `ggplot`, `sp`, `sf`](geo-dataframe-shapefile.html)
     - [`.shp` 지도 일부 추출](geo-info-shapefile.html)
     - [단계구분도(choropleth) 공간정보 시각화](geo-info-choropleth.html)
