@@ -3,28 +3,37 @@ layout: page
 title: "공간통계를 위한 데이터 사이언스"
 subtitle: "지리정보 - R"
 author:
-    name: xwMOOC
-    url: https://www.facebook.com/groups/tidyverse/
-    affiliation: Tidyverse Korea
+  name: "[Tidyverse Korea](https://www.facebook.com/groups/tidyverse/)"
+  url: https://www.facebook.com/groups/tidyverse/
+  affiliation: Tidyverse Korea
+  affiliation_url: https://www.facebook.com/groups/tidyverse/
 date: "`r Sys.Date()`"
 output:
   html_document: 
+    include:
+      after_body: footer.html
+      before_body: header.html
+    theme: journal
     toc: yes
+    toc_depth: 2
     toc_float: true
     highlight: tango
     code_folding: show
     number_section: true
     self_contained: true
+bibliography: bibliography_spatial.bib
+csl: biomed-central.csl
+urlcolor: blue
+linkcolor: bluee
 editor_options: 
   chunk_output_type: console
-mainfont: NanumGothic
 ---
-
-
+ 
 ``` {r, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
-                    comment="", digits = 3, tidy = FALSE, prompt = FALSE, fig.align = 'center')
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE,
+                      comment="", digits = 3, tidy = FALSE, prompt = FALSE, fig.align = 'center')
 ```
+
 
 # 지리정보 파일 [^data-carpentry-shapefile] [^vector-raster] {#geoinfo-filename}
 
@@ -85,7 +94,23 @@ WGS84(WGS 1984, EPSG:4326, WGS84)는 세계 지구 좌표 시스템(World Geodet
 
 <img src="fig/ellipsoidal_coordinate_system.png" alt="좌표계 변환" width="100%" />
 
-# R 팩키지 {#geoinfo-packages}
+# 공간 데이터 과학 R 생태계 [^user2020-rspatial] [^spatial-ecosystem] {#geoinfo-packages}
+
+[^user2020-rspatial]: [Sébastien Rochette, Dorris Scott, Jakub Nowosad (2020), "First steps in spatial handling and visualization"](https://github.com/statnmap/user2020_rspatial_tutorial)
+
+[^spatial-ecosystem]: [Kim A. Etienne C. Timothée G., "Spatial Data and Cartography with R", SatRday Paris February 2019](https://comeetie.github.io/satRday/lecture/lecture.html)
+
+## 현재 인기있는 R 공간 팩키지 {#geoinfo-packages-modern}
+
+R에서 공간 지리 통계 및 공간 지리 데이터를 다루는 팩키는 `rgdal`, `sp`, `rgeos`가 개발되어 사용되고 있었다.
+
+- `sp`: R에서 공간 데이터(spatial data)를 표현하는 클래스와 메쏘드 자료구조.
+- `rgdal`: R과  [GDAL (Geospatial Data Abstraction Library)](https://gdal.org/) and [PROJ4](https://github.com/OSGeo/PROJ) 라이브러리를 연결시키는 인터페이스 팩키지 - 래스터 / 벡터 지리공간 데이터 형식과 좌표 변환 기능 담당
+- `rgeos`: R과 [`GEOS - Geometry Engine`](https://trac.osgeo.org/geos/) 라이브러리를 연결시키는 인터페이스 팩키지 - 면적, 둘레 길이, 거리, 다양한 지도 연산(dissolve, buffer, overlap, union, contains, ...)
+
+하지만, 2016년 10월 20일 [`sf`](https://r-spatial.github.io/sf/index.html)가 발표되면서 `sp`, `rgeos`, `rgdal` 3개 핵심 팩키지가 하나로 통합되었다. `sp` 팩키지 저자 Edzer Pebesm가 `sp`를 주도하고 있으며 `tidyverse`와 호환되고 파이프 구문 등 철학을 공유하고 있다.
+
+![](fig/spatial-sf.png)
 
 - 공간 데이터 
     - `sp`: [sp: Classes and Methods for Spatial Data](https://cran.r-project.org/web/packages/sp/index.html)
@@ -96,16 +121,18 @@ WGS84(WGS 1984, EPSG:4326, WGS84)는 세계 지구 좌표 시스템(World Geodet
     - `stars`: [Spatiotemporal tidy arrays for R](https://github.com/r-spatial/stars)        
 - 정적 시각화
     - `ggmap`: [ggmap: Spatial Visualization with ggplot2](https://cran.r-project.org/web/packages/ggmap/index.html)
+    - `cartography`: [Create and integrate maps in your R workflow!](https://github.com/riatelab/cartography) - Base 그래픽에 기반을 두고 있으며 기본적인 지도 뿐만 아니라 고급 지도 표현도 가능하다.
 - 인터랙티브 시각화
     - `leaflet`: [Open-source JavaScript libraries for interactive maps](https://rstudio.github.io/leaflet/)
     - `tmap`: [tmap: Thematic Maps](https://github.com/mtennekes/tmap)
     - `mapview`: [mapview: Interactive Viewing of Spatial Data in R](https://github.com/r-spatial/mapview)
+    - `mapdeck`: [mapdeck: Interactive Maps Using 'Mapbox GL JS' and 'Deck.gl'](https://github.com/SymbolixAU/mapdeck)
 
 ---
 
 <div class = "row">
   <div class = "col-md-6">
-**`sp` - `sf` 이전 시절**
+**`sp`: `sf` 이전 시절**
 
 `sp`, `rgdal`, `rgeos`를 결합하여 사용하던 옛시절이 있었다.
 
