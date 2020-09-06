@@ -13,7 +13,6 @@ output:
     include:
       after_body: footer.html
       before_body: header.html
-    theme: journal
     toc: yes
     toc_depth: 2
     toc_float: true
@@ -70,29 +69,54 @@ R 에서 ESRI Shapefile 파일을 저장하면 S4 `SpatailPolygonsDataFrame`으�
 많이 사용되는 좌표계는 다음이 있다.
 WGS84(WGS 1984, EPSG:4326, WGS84)는 세계 지구 좌표 시스템(World Geodetic System, WGS) 1984년에 제정된 범 지구적 측위 시스템으로 지도학, 측지학, 항법에 많이 사용된다.
 
-- **EPSG:4326** &rarr; WGS84 경위도: GPS가 사용하는 좌표계
-    - 서비스: 구글 지구(Google Earth)
-    - 단위: 소수점 (decimal degrees)
-    - `+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs`
-- **EPSG:3857** &rarr;  Google Mercator
-    - 서비스: 구글 지도(Google Maps), 빙 지도(Bing Maps), 야후지도, OSM(Open Street Maps)
-    - 단위: 미터
-    - `+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs`
-- **EPSG:5181**  &rarr; 중부원점(GRS80)
-    - 서비스: 다음카카오 지도 API [^kakao-api-crs]
-    - CRS 스펙: `+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=500000 +ellps=GRS80 +units=m +no_defs`
-- **EPSG:5179** &rarr; UTM-K (GRS80) [^naver-crs]
-    - 서비스: 네이버지도
-    - CRS 스펙: `+proj=tmerc +lat_0=38 +lon_0=127.5 +k=0.9996 +x_0=1000000 +y_0=2000000 +ellps=GRS80 +units=m +no_defs`
-- **EPSG:5178** &rarr; UTM-K (Bessel)
-    - 서비스: 새주소지도
-    - CRS 스펙: `+proj=tmerc +lat_0=38 +lon_0=127.5 +k=0.9996 +x_0=1000000 +y_0=2000000 +ellps=bessel +units=m +no_defs +towgs84=-145.907,505.034,685.756,-1.162,2.347,1.592,6.342`
-    
+- 전지구 좌표계: 전세계를 한번에 나타내야 할 때 많이 쓰이는 좌표계
+    - **EPSG:3857** &rarr;  Google Mercator
+        - 서비스: 구글 지도(Google Maps), 빙 지도(Bing Maps), 야후지도, OSM(Open Street Maps)
+        - 단위: 미터
+        - `+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs`
+    - **EPSG:4326** &rarr; WGS84 경위도: GPS가 사용하는 좌표계
+        - 서비스: 구글 지구(Google Earth)
+        - 단위: 소수점 (decimal degrees)
+        - `+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs`
+- 타원체 바꾼 지리원 표준: 과거 지리원 좌표계에서 타원체와 lon_0 문제를 수정한 좌표계로 2000년대 초반에 잠시 많이 사용
+    - **EPSG:5181**  &rarr; 중부원점(GRS80)
+        - 서비스: 다음카카오 지도 API [^kakao-api-crs]
+        - CRS 스펙: `+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=500000 +ellps=GRS80 +units=m +no_defs`
+- KATEC 계열: 한반도 전체를 하나의 좌표계로 나타낼 때 많이 사용하는 좌표계
+    - **EPSG:5179** &rarr; UTM-K (GRS80) [^naver-crs]
+        - 서비스: 네이버지도
+        - CRS 스펙: `+proj=tmerc +lat_0=38 +lon_0=127.5 +k=0.9996 +x_0=1000000 +y_0=2000000 +ellps=GRS80 +units=m +no_defs`
+    - **EPSG:5178** &rarr; UTM-K (Bessel)
+        - 서비스: 새주소지도
+        - CRS 스펙: `+proj=tmerc +lat_0=38 +lon_0=127.5 +k=0.9996 +x_0=1000000 +y_0=2000000 +ellps=bessel +units=m +no_defs +towgs84=-145.907,505.034,685.756,-1.162,2.347,1.592,6.342`
+- 현재 국토지리정보원 표준: 2002년 이후에 국토지리정보원 지형도에서 사용중인 좌표계
+    - 서부원점(GRS80)-falseY:60000
+        - EPSG:5185
+        - +proj=tmerc +lat_0=38 +lon_0=125 +k=1 +x_0=200000 +y_0=600000 +ellps=GRS80 +units=m +no_defs
+    - 중부원점(GRS80)-falseY:60000
+        - EPSG:5186
+        - +proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=600000 +ellps=GRS80 +units=m +no_defs
+    - 동부원점(GRS80)-falseY:60000
+        - EPSG:5187
+        - +proj=tmerc +lat_0=38 +lon_0=129 +k=1 +x_0=200000 +y_0=600000 +ellps=GRS80 +units=m +no_defs
+    - 동해(울릉)원점(GRS80)-falseY:60000
+        - EPSG:5188
+        - +proj=tmerc +lat_0=38 +lon_0=131 +k=1 +x_0=200000 +y_0=600000 +ellps=GRS80 +units=m +no_defs
+
 [^kakao-api-crs]: [Kakao DevTalk, "다음지도 좌표계 관련"](https://devtalk.kakao.com/t/topic/35844)
 
 [^naver-crs]: [VISUALIZING STORY - STORY ABOUT TRUTH AND LIFE, "한국 주요 좌표계 EPSG코드 및 PROJ4 인자정리"](https://visualizingstory.wordpress.com/2013/04/24/%ED%95%9C%EA%B5%AD-%EC%A3%BC%EC%9A%94-%EC%A2%8C%ED%91%9C%EA%B3%84-epsg%EC%BD%94%EB%93%9C-%EB%B0%8F-proj4-%EC%9D%B8%EC%9E%90-%EC%A0%95%EB%A6%AC/#respond)
 
 <img src="fig/ellipsoidal_coordinate_system.png" alt="좌표계 변환" width="100%" />
+
+## 좌표계 종류와 파일 [^crs-types-coordinate] {#coordinate-types-files}
+
+[^crs-types-coordinate]: [조덕연, "8. 기타 자료 우리나라에서 사용하는 좌표계의 종류 및 좌표계 파일", biz-gis.com ](http://www.biz-gis.com/index.php?mid=pds&document_srl=67326)
+
+우리나라에서 사용하는 좌표계의 종류도 너무 많고 설정 수치도 다양한데 조덕연님이 2012년 대한민국 좌표계에 대해서 다음과 같이 잘 정리해 주셨다.
+
+![](data/Custom_Coordinate_Systems/좌표계_정리.jpg)
+
 
 # 공간 데이터 과학 R 생태계 [^user2020-rspatial] [^spatial-ecosystem] {#geoinfo-packages}
 
@@ -165,86 +189,6 @@ sf_sticker <- stickr_get("sf", view=FALSE)
 
 image_read(sf_sticker) %>% 
   image_resize("33%")
-```
-
-
-# 지도 데이터 {#geoinfo-shapefile}
-
-- `GADM`: [GADM maps and data](https://gadm.org/)
-    - level-0, level-1, level-2
-    - Geopackage
-    - Shapefile
-    - R (`sp`)
-    - R (`sf`)
-- `tigris`: [Census TIGER/Line shapefiles](https://github.com/walkerke/tigris)
-- `rworldmap`: [Mapping Global Data](https://github.com/AndySouth/rworldmap)
-- [대한민국 최신 행정구역(SHP) 다운로드](http://www.gisdeveloper.co.kr/?p=2332): 시도, 시군구, 읍면동, 리
-- [대한민국 행정동 경계(admdongkor)](https://github.com/vuski/admdongkor)
-    - `geojson`  파일형식, 좌표계는 WGS84 (EPSG:4326), 인코딩 UTF-8.
-- [국토정보플랫폼 - 국토교통부 국토지리정보원 운영](http://map.ngii.go.kr/mn/mainPage.do)
-
-## `GADM` 지도 데이터 {#geoinfo-shapefile-gadm}
-
-[Download GADM data (version 3.6)](https://gadm.org/download_country_v3.html) 웹사이트에서 레벨2(level-2)까지 시군구 데이터를 불러온다. `sf` 팩키지로 바로 작업할 수 있도록 `R (sf)` **level2**를 다운로드 받아 시각화한다.
-
-- R (sf): level-0, level1, **level2**
-
-```{r gadm-3-6-korea, eval=FALSE}
-library(tidyverse)
-library(sf)
-
-korea_sf <- read_rds("data/shapefile/gadm36_KOR_2_sf.rds")
-
-st_crs(korea_sf)
-
-head(korea_sf)
-
-korea_sf %>% 
-  select(GID_0) %>% 
-  plot()
-```
-
-
-## 행정동 전체코드 [^hang-code-faq] {#geo-info-shapefile-code}
-
-[^hang-code-faq]: [행정표준코드관리시스템](https://www.code.go.kr/index.do)
-
-"행정표준코드관리시스템" &rarr; 자주묻는질문 &rarr; 게시판글 1번: "	
-행정동코드(전체) 및 법정동·행정동코드 매핑 자료 받는 방법은 어떻게 되나요?" 
-
-지도관련하여 주무관청이 다르고 서로 추구하는 바도 달라 동일한 지도위에 서로 다른 코드를 정해 사용하고 있다. 과거에는 서로 교차업무를 할 일이 없어 독립적인 코드체계가 그다지 문제가 되지 않았으나, 오늘날에는 코딩 작업하는 개발자에게 커다란 고통을 수반하고 있다. 크게 통계청과 행정안전부로 나눠 살펴볼 수 있다.
-
-[통계청](http://kostat.go.kr/) &rarr; [통계분류포털](http://kssc.kostat.go.kr) 사이트에서,  
-즉, `통계청` &rarr; `통계분류포털` &rarr; `특수/일반/국제/행정구역분류`를 쫓아가게 되면,
-[한국행정구역분류](https://kssc.kostat.go.kr:8443/ksscNew_web/index.jsp)에서 대한 엑셀파일을 
-다운로드 받거나 웹화면으로 조회를 할 수도 있다. 결국  `.shp` 파일에 내재되어 있는 
-행정동 정보와 행정구역코드를 시도, 시군구, 읍면동으로 구분해 나갈 수 있다.
-
-행정안전부 행정동 전체 코드의 경우, 행정동 전체코드 및 법정동·행정동코드 매핑 자료는 
-행정안전부 지방행정실 홈페이지에서 자료를 제공하고 있다. [^hang-code]
-
-[^hang-code]: [지방자치분권실 - 주민등록 및 인감](http://www.mois.go.kr/frt/bbs/type001/commonSelectBoardList.do?bbsId=BBSMSTR_000000000052 )
-
-좌측 메뉴에서 "지방자치분권실" &rarr; "주민등록 및 인감" &rarr; "주민등록 및 인감" 을 따라 
-'주민등록 및 인감 게시판'에서 '주민등록주소코드 변경내역의 최신일자'로 된 제목을 클릭하여 압축파일을 다운로드한다.
-
-압축해제하게 되면 다음과 같은 형식의 파일이 압축이 풀려 디렉토리에 저장된다.
-
-- KiKcd_H.20140301(날짜) - 행정기관코드(전제 행정동코드) 
-- KiKcd_B.20140301(날짜) - 법정주소코드(전체 법정동코드) 
-- KiKmix.20140301(날짜) - 행정기관코드+법정주소코드(매핑코드) 
-
-주민등록주소코드 변경내역(2019.03.01. 시행) `jscode20190301.zip` 파일을 압축풀게 되면 
-`KIKcd_H.20190301.xlsx` 파일이 행정동 기준으로 나온다. 이를 활용하여 행정동코드를 확인할 수 있고 앞서 
-[대한민국 최신 행정구역(SHP) 다운로드](http://www.gisdeveloper.co.kr/?p=2332)에서 내려받은 `shapefile`과 연결하여 수월(?)하게 공간정보 관련 작업을 수행할 수 있게 된다.
-
-```{r hangcode-excel}
-library(readxl)
-
-h_code_df <- read_excel("data/shapefile/jscode20190301/KIKcd_H.20190301.xlsx", sheet='KIKcd_H')
-
-DT::datatable(h_code_df)
-
 ```
 
 

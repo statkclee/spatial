@@ -4,35 +4,35 @@
     <meta charset="utf-8">
     <meta name="generator" content="pandoc">
     <title>Software Carpentry: 공간통계를 위한 데이터 과학</title>
-    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" type="text/css" href="css/bootstrap/bootstrap.css" />
-    <link rel="stylesheet" type="text/css" href="css/bootstrap/bootstrap-theme.css" />
-    <link rel="stylesheet" type="text/css" href="css/swc.css" />
-    <link rel="alternate" type="application/rss+xml" title="Software Carpentry Blog" href="http://software-carpentry.org/feed.xml"/>
-    <meta charset="UTF-8" />
-    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
-    <!--[if lt IE 9]>
-      <script src="https://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-
-    <script>
-      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-      ga('create', 'UA-59802572-19', 'auto');
-      ga('send', 'pageview');
-
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" type="text/css" href="css/bootstrap/bootstrap.css" />
+    <link rel="stylesheet" type="text/css" href="css/bootstrap/bootstrap-theme.css" />
+    <link rel="stylesheet" type="text/css" href="css/swc.css" />
+    <link rel="alternate" type="application/rss+xml" title="Software Carpentry Blog" href="http://software-carpentry.org/feed.xml"/>
+    <meta charset="UTF-8" />
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="https://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+    
+      ga('create', 'UA-59802572-19', 'auto');
+      ga('send', 'pageview');
+    
     </script>
   </head>
   <body class="lesson">
     <div class="container card">
-      <div class="banner">
-        <a href="http://software-carpentry.org" title="Software Carpentry">
-          <img alt="Software Carpentry banner" src="img/software-carpentry-banner.png" />
-        </a>
+      <div class="banner">
+        <a href="http://software-carpentry.org" title="Software Carpentry">
+          <img alt="Software Carpentry banner" src="img/software-carpentry-banner.png" />
+        </a>
       </div>
       <article>
       <div class="row">
@@ -40,9 +40,9 @@
                     <h1 class="title">공간통계를 위한 데이터 과학</h1>
           <p><img src="fig/ct-unplugged-4th-paradigm-korea.png" width="57%" /></p>
 <aside class="callout panel panel-info">
-<section id="ai-is-a-superpower" class="panel-heading">
-<h3><span class="glyphicon glyphicon-pushpin"></span>AI is a Superpower</h3>
-</section>
+<div class="panel-heading">
+<h3 id="ai-is-a-superpower"><span class="glyphicon glyphicon-pushpin"></span>AI is a Superpower</h3>
+</div>
 <div class="panel-body">
 <p>“AI is a superpower!!!”, 인공지능을 체득하면 슈퍼파워를 손에 쥘 것이다. <a href="https://twitter.com/andrewyng/status/728986380638916609">Andrew Ng</a></p>
 <p>금수저, 은수저 슈퍼파워를 받은 사람과 기계학습을 통달한 흑수저들간의 무한경쟁이 드뎌 시작되었다. 물론, 금수저를 입에 물고 기계학습을 통달한 사람이 가장 유리한 출발을 시작한 것도 사실이다.</p>
@@ -50,13 +50,16 @@
 </aside>
 <h2 id="학습목차">학습목차</h2>
 <ul>
-<li><a href="geo-spatial-r.html">지리정보 - R</a></li>
+<li><a href="geo-spatial-r.html">지리정보 - R</a>
+<ul>
+<li><a href="geo-crs.html">좌표계 변환</a></li>
+</ul></li>
 <li><a href="geo-info.html">공간 통계 - 지리정보</a>
 <ul>
 <li><a href="geo-info-lonlat.html">지리정보 API - 주소와 위도경도</a></li>
 <li><a href="geo-info-postcode.html">우편번호/주소 지리정보 시각화 - <code>ggplot</code> + <code>ggmap</code></a></li>
 </ul></li>
-<li>지리정보 데이터
+<li><a href="geo-dataset.html">지리정보 데이터</a>
 <ul>
 <li><a href="geo-gadm.html">지도 데이터: <code>GADM</code> - 행정 지도</a></li>
 <li><a href="geo-sf-dataframe.html">데이터프레임 → 지도 변환 - 지진과 원전</a></li>
@@ -90,26 +93,26 @@
         </div>
       </div>
       </article>
-      <div class="footer">
-        <a class="label swc-blue-bg" href="http://software-carpentry.org">Software Carpentry</a>
-        <a class="label swc-blue-bg" href="https://github.com/swcarpentry/lesson-template">Source</a>
-        <a class="label swc-blue-bg" href="mailto:admin@software-carpentry.org">Contact</a>
-        <a class="label swc-blue-bg" href="LICENSE.html">License</a>
+      <div class="footer">
+        <a class="label swc-blue-bg" href="http://software-carpentry.org">Software Carpentry</a>
+        <a class="label swc-blue-bg" href="https://github.com/swcarpentry/lesson-template">Source</a>
+        <a class="label swc-blue-bg" href="mailto:admin@software-carpentry.org">Contact</a>
+        <a class="label swc-blue-bg" href="LICENSE.html">License</a>
       </div>
     </div>
-    <!-- Javascript placed at the end of the document so the pages load faster -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    <script src="css/bootstrap/bootstrap-js/bootstrap.js"></script>
-    <script src='https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>
-    <script>
-      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-      ga('create', 'UA-37305346-2', 'auto');
-      ga('send', 'pageview');
-
+    <!-- Javascript placed at the end of the document so the pages load faster -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="css/bootstrap/bootstrap-js/bootstrap.js"></script>
+    <script src='https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+    
+      ga('create', 'UA-37305346-2', 'auto');
+      ga('send', 'pageview');
+    
     </script>
   </body>
 </html>

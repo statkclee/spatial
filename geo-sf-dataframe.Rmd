@@ -89,7 +89,7 @@ library(mapview)
 
 # 1. 데이터 가져오기 -----
 ## 1.1. 국내지진 규모별 순위 상위 10개
-# Sys.setlocale("LC_ALL", "C")
+Sys.setlocale("LC_ALL", "C")
 
 eq_url <- "http://www.weather.go.kr/weather/earthquake_volcano/scalelist.jsp"
 
@@ -99,7 +99,7 @@ eq_dat <- read_html(eq_url, encoding = "EUC-KR") %>%
   html_table(fill = TRUE) %>% 
   .[[1]] 
 
-# Sys.setlocale("LC_ALL", "Korean")
+Sys.setlocale("LC_ALL", "Korean")
 
 ## 1.2. 원전 데이터 
 np_df <- tribble(~name, ~address, ~lat, ~lon,
