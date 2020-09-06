@@ -89,16 +89,17 @@ library(mapview)
 
 # 1. 데이터 가져오기 -----
 ## 1.1. 국내지진 규모별 순위 상위 10개
-Sys.setlocale("LC_ALL", "C")
+# Sys.setlocale("LC_ALL", "C")
 
 eq_url <- "http://www.weather.go.kr/weather/earthquake_volcano/scalelist.jsp"
 
-eq_dat <- read_html(eq_url, encoding = "EUC-KR") %>% 
+eq_dat <- read_html(eq_url, encoding = "EUC-KR") %>%
+# eq_dat <- read_html(eq_url) %>%
   html_nodes(xpath = '//*[@id="content_weather"]/table') %>% 
   html_table(fill = TRUE) %>% 
-  .[[1]]
+  .[[1]] 
 
-Sys.setlocale("LC_ALL", "Korean")
+# Sys.setlocale("LC_ALL", "Korean")
 
 ## 1.2. 원전 데이터 
 np_df <- tribble(~name, ~address, ~lat, ~lon,
@@ -108,12 +109,12 @@ np_df <- tribble(~name, ~address, ~lat, ~lon,
                 "한울", "경상북도 울진군 북면 부구리", 37.18011679577809, 129.16451181750688)
 
 # 2. 데이터 정제하기 -----
-names(eq_dat) <- c("No.", "규모", "발생연월일", "진원시", "lat", 
+names(eq_dat) <- c("No.", "magintude", "발생연월일", "진원시", "lat", 
                          "lon", "진앙")
 
 eq_df <- eq_dat %>% 
   filter(row_number() != 1) %>% 
-  mutate(규모 = as.numeric(규모),
+  mutate(magintude = as.numeric(magintude),
            lat = as.numeric(lat),
            lon = as.numeric(lon))
 ```
@@ -145,9 +146,9 @@ np_sf <- st_as_sf(np_df,
 # 3. 데이터 시각화 -----
 ## 지진과 원전위치 함께 표시
 
-mapview(eq_sf, 
-        zcol = "규모", 
-        cex = "규모",
+eq_reactor <- mapview(eq_sf, 
+        zcol = "magintude", 
+        cex = "magintude",
         at = seq(4, 6, 0.5),
         hide =TRUE) +
 mapview(np_sf,
@@ -155,5 +156,10 @@ mapview(np_sf,
         color = "red",
         col.regions = "yellow",
         hide =TRUE) 
+
+# eq_reactor
+
+# mapshot(eq_reactor, url = paste0(getwd(), "/eq_reactor.html"), selfcontained=TRUE) 
+# htmlwidgets::saveWidget(eq_reactor@map, paste0(getwd(), "/eq_reactor.html"), selfcontained=TRUE)
 ```
 
