@@ -69,6 +69,8 @@ R 에서 ESRI Shapefile 파일을 저장하면 S4 `SpatailPolygonsDataFrame`으�
 많이 사용되는 좌표계는 다음이 있다.
 WGS84(WGS 1984, EPSG:4326, WGS84)는 세계 지구 좌표 시스템(World Geodetic System, WGS) 1984년에 제정된 범 지구적 측위 시스템으로 지도학, 측지학, 항법에 많이 사용된다.
 
+좌표계를 특정하는 방식은 [**EPSG** 숫자코드](https://spatialreference.org/ref/epsg/)를 사용하는 방법과 [**PROJ4** 정형문자열](https://proj.org/apps/proj.html) 방식이 있다. EPSG 코드가 항상 특정 좌표시스템과 대응되지는 않지만, 공간 정보를 담고 있는 객체(spatial object)가 특정 좌표계를 갖고 있다면 PROJ4 투영 문자열을 항상 갖게된다.
+
 - 전지구 좌표계: 전세계를 한번에 나타내야 할 때 많이 쓰이는 좌표계
     - **EPSG:3857** &rarr;  Google Mercator
         - 서비스: 구글 지도(Google Maps), 빙 지도(Bing Maps), 야후지도, OSM(Open Street Maps)
@@ -90,18 +92,14 @@ WGS84(WGS 1984, EPSG:4326, WGS84)는 세계 지구 좌표 시스템(World Geodet
         - 서비스: 새주소지도
         - CRS 스펙: `+proj=tmerc +lat_0=38 +lon_0=127.5 +k=0.9996 +x_0=1000000 +y_0=2000000 +ellps=bessel +units=m +no_defs +towgs84=-145.907,505.034,685.756,-1.162,2.347,1.592,6.342`
 - 현재 국토지리정보원 표준: 2002년 이후에 국토지리정보원 지형도에서 사용중인 좌표계
-    - 서부원점(GRS80)-falseY:60000
-        - EPSG:5185
-        - +proj=tmerc +lat_0=38 +lon_0=125 +k=1 +x_0=200000 +y_0=600000 +ellps=GRS80 +units=m +no_defs
-    - 중부원점(GRS80)-falseY:60000
-        - EPSG:5186
-        - +proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=600000 +ellps=GRS80 +units=m +no_defs
-    - 동부원점(GRS80)-falseY:60000
-        - EPSG:5187
-        - +proj=tmerc +lat_0=38 +lon_0=129 +k=1 +x_0=200000 +y_0=600000 +ellps=GRS80 +units=m +no_defs
-    - 동해(울릉)원점(GRS80)-falseY:60000
-        - EPSG:5188
-        - +proj=tmerc +lat_0=38 +lon_0=131 +k=1 +x_0=200000 +y_0=600000 +ellps=GRS80 +units=m +no_defs
+    - **EPSG:5185** &rarr; 서부원점(GRS80)-falseY:60000
+        - CRS 스펙: `+proj=tmerc +lat_0=38 +lon_0=125 +k=1 +x_0=200000 +y_0=600000 +ellps=GRS80 +units=m +no_defs`
+    - **EPSG:5186** &rarr; 중부원점(GRS80)-falseY:60000
+        - CRS 스펙: `+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=600000 +ellps=GRS80 +units=m +no_defs`
+    - **EPSG:5187** &rarr; 동부원점(GRS80)-falseY:60000
+        - CRS 스펙:` +proj=tmerc +lat_0=38 +lon_0=129 +k=1 +x_0=200000 +y_0=600000 +ellps=GRS80 +units=m +no_defs`
+    - **EPSG:5188** &rarr; 동해(울릉)원점(GRS80)-falseY:60000
+        - CRS 스펙: `+proj=tmerc +lat_0=38 +lon_0=131 +k=1 +x_0=200000 +y_0=600000 +ellps=GRS80 +units=m +no_defs`
 
 [^kakao-api-crs]: [Kakao DevTalk, "다음지도 좌표계 관련"](https://devtalk.kakao.com/t/topic/35844)
 

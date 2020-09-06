@@ -34,9 +34,117 @@ knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE,
 ```
 
 
-# 대한민국 좌표계 {#coordinate-reference-system}
+# 대한민국 좌표계 [^RStudio-address-coordiante] {#coordinate-reference-system}
+
+[^RStudio-address-coordiante]: [토리홀릭, "RStudio 주소와 자표 - 위도, 경도 좌표 변환하기"](https://m.blog.naver.com/hss2864/221645763282)
 
 - [좌표계(CRS)](geo-spatial-r.html#2_좌표계(CRS)34) 참고
+- [spatial reference list 검색 웹사이트](https://spatialreference.org/ref/)
 
-# 
+# 주소와 좌표 데이터 {#korea-address-coordinate}
+
+주출입구의 좌표정보가 결합된 [위치정보요약DB](https://www.juso.go.kr/addrlink/addressBuildDevNew.do?menu=geodata)를 행정안전부 주소정책과에서 제공하고 있다.
+
+## 위치정보요약 매뉴얼 {#korea-address-coordinate-summary}
+
+위치정보요약 매뉴얼에 제공되는 주출입구 위치는 **GRS80 UTM-K** 좌표 기준으로 제공되고 있다.
+따라서, 공간정보 시각화를 위해서 좌표를 조정해야 정확한 위치를 파악할 수 있게 된다.
+
+```{r manual-db-summary}
+library(tidyverse)
+library(slickR)
+library(pdftools)
+
+manual_pdf <- pdf_convert("data/location_db/location_DB_manual.pdf",format = 'png',verbose = FALSE)
+
+fs::file_move("location_DB_manual_1.png", "fig/")
+fs::file_move("location_DB_manual_2.png", "fig/")
+fs::file_move("location_DB_manual_3.png", "fig/")
+
+manual_pdf_df <- tibble(page = glue::glue("fig/{manual_pdf}") )
+  
+slickR(manual_pdf_df$page, height = 600)
+```
+
+
+## 위치 데이터 {#korea-address-coordinate-data}
+
+먼저, 매뉴얼 PDF에서 스키마를 참조하여 필드명을 추출한다.
+
+```{r read-location-DB-fieldname}
+## 칼럼명
+library(tabulizer)
+# locate_areas("data/location_db/location_DB_manual.pdf", pages = 2)
+
+loc_fieldname <- extract_tables("data/location_db/location_DB_manual.pdf", 
+               pages = 2,
+               guess = FALSE,
+               area = list(c(206.42936,  27.64179, 647.18799, 524.37831)),
+               encoding = "UTF-8")
+
+loc_fieldname_vec <- loc_fieldname[[1]] %>% 
+  as.data.frame() %>% 
+  select(V2) %>% 
+  slice(4:25) %>% 
+  filter(!is.na(V2), V2!="") %>% 
+  mutate(변수명 = str_extract(V2, "[가-힣a-zA-Z]+")) %>% 
+  pull(변수명)
+
+loc_fieldname_vec
+```
+
+앞서 추출한 칼럼명을 위치정보요약DB 본파일에 입혀 후속 작업을 진행할 수 있도록 데이터프레임을 제작한다.
+
+```{r read-location-DB}
+loc_dat <- read_delim("data/location_db/entrc_mod.txt", col_names = FALSE, delim = "|")
+
+## 인코딩 변환: CP949 --> UTF-8
+loc_df <- loc_dat %>% 
+  mutate_all(iconv, from = "CP949", to = "UTF-8") %>% 
+  set_names(c(loc_fieldname_vec, "이동사유코드")) %>% 
+  na.omit() %>% 
+  mutate(X좌표 = as.numeric(X좌표),
+         Y좌표 = as.numeric(Y좌표))
+
+loc_df %>% 
+  sample_n(10) %>% 
+  DT::datatable()
+```
+
+## 좌표계 변환 {#location-DB-crs}
+
+`st_as_sf()` 함수 내부에 X좌표와 Y좌표를 적어주고 변환하고자 하는 좌표계를 지정하면 해당 좌표계로 변환할 수 있다.
+
+```{r location-DB-crs}
+library(sf)
+
+## KATEC --> UTM-K
+loc_katec_sf <- loc_df %>% 
+  st_as_sf(coords = c("X좌표", "Y좌표"), crs = 5179 )
+
+st_crs(loc_katec_sf)
+
+loc_katec_sf %>% 
+  select(법정동코드, 시도명, 시군구명, 읍면동명, geometry)
+
+## WGS84 --> GPS
+loc_gps_sf <- loc_df %>% 
+  st_as_sf(coords = c("X좌표", "Y좌표"), crs = 4326  )
+
+st_crs(loc_gps_sf)
+
+loc_gps_sf %>% 
+  select(법정동코드, 시도명, 시군구명, 읍면동명, geometry)
+```
+
+## 시각화 {#location-DB-crs-viz}
+
+건물용도분류에 따라 기타 포함 6개 범주로 시각화해보자.
+
+```{r location-DB-crs-viz}
+loc_gps_sf %>% 
+  mutate(건물용도분류 = fct_lump(건물용도분류, 5)) %>% 
+  ggplot(aes(color=건물용도분류)) +
+    geom_sf() 
+```
 
