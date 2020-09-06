@@ -1,28 +1,43 @@
 ---
 layout: page
-title: 공간통계를 위한 데이터 과학
-subtitle: 지진과 원전 - sf와 데이터프레임의 만남
+title: "공간통계를 위한 데이터 과학"
+subtitle: "데이터프레임 &rarr; 지도 변환 - 지진과 원전"
+author:
+  name: "[Tidyverse Korea](https://www.facebook.com/groups/tidyverse/)"
+  url: https://www.facebook.com/groups/tidyverse/
+  affiliation: Tidyverse Korea
+  affiliation_url: https://www.facebook.com/groups/tidyverse/
 date: "`r Sys.Date()`"
 output:
   html_document: 
+    include:
+      after_body: footer.html
+      before_body: header.html
+    theme: journal
     toc: yes
+    toc_depth: 2
+    toc_float: true
     highlight: tango
-    code_folding: hide
-    css: css/swc.css
-  pdf_document:
-    latex_engine: xelatex
-mainfont: NanumGothic
+    code_folding: show
+    number_section: true
+    self_contained: true
+bibliography: bibliography_spatial.bib
+csl: biomed-central.csl
+urlcolor: blue
+linkcolor: bluee
+editor_options: 
+  chunk_output_type: console
 ---
  
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE, quietly=TRUE)
+``` {r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE,
+                      comment="", digits = 3, tidy = FALSE, prompt = FALSE, fig.align = 'center')
+
+knitr::opts_chunk$set(cache = FALSE)
 
 library(tidyverse)
 library(readxl)
-library(stringr)
-library(ggplot2)
 library(sf)
-library(pryr)
 library(rvest)
 library(ggpubr)
 library(extrafont)
@@ -31,8 +46,16 @@ library(tmap)
 
 ```
 
-## 1. 지진과 원전 {#earthquake-nuclear-prologue}
+# 위경도가 포함된 데이터프레임 {#dataframe-long-lat}
 
+데이터프레임에 위도와 경도가 포함된 경우 이를 좌표계정보를 더해 지도를 제작할 수 있다.
+
+```{r convert-to-shapefile}
+
+```
+
+
+# 들어가며 {#earthquake-nuclear-prologue}
 
 지진과 원전의 관계를 쉽게 이해하는 것도 중요하다. 
 특히 동일본 후쿠시마 지진으로 인한 쓰나미로 원전이 침수되어 크나큰 문제가 되고 아직도 해결이 되지 않고 크나큰 후유증을 남기고 있다.
@@ -45,7 +68,7 @@ library(tmap)
 
 <img src="fig/geo-sf-mapview.png" alt="데이터프레임, sf, mapview" width="100%" />
 
-## 2. 지진과 원전 데이터 [^rvest-encoding] {#earthquake-nuclear-setup}
+# 지진과 원전 데이터 [^rvest-encoding] {#earthquake-nuclear-setup}
 
 [^rvest-encoding]: [rvest, html_table function error #117](https://github.com/hadley/rvest/issues/117)
 
@@ -96,7 +119,7 @@ eq_df <- eq_dat %>%
 ```
 
 
-## 3. 지진과 원전 데이터 전처리 [^geocompuation-with-r] {#earthquake-nuclear-preprocessing}
+# 지진과 원전 데이터 전처리 [^geocompuation-with-r] {#earthquake-nuclear-preprocessing}
 
 [^geocompuation-with-r]: [Robin Lovelace, Jakub Nowosad, Jannes Muenchow, Geocomputation with R, 2018-01-16](https://geocompr.robinlovelace.net/)
 
@@ -114,11 +137,11 @@ np_sf <- st_as_sf(np_df,
                   crs = 4326)
 ```
 
-## 4. 지진과 원전 공간정보 시각화 {#earthquake-nuclear-viz}
+# 지진과 원전 공간정보 시각화 {#earthquake-nuclear-viz}
 
 마지막으로 `eq_sf` 지진 데이터를 갖는 지도객체와 `np_sf` 원전 위치 데이터를 갖는 지도객체를 `+` 연산자로 하나의 지도에 표현한다.
 
-``` {r earthquake-nuclear-viz}
+``` {r earthquake-nuclear-viz, cache=FALSE}
 # 3. 데이터 시각화 -----
 ## 지진과 원전위치 함께 표시
 
