@@ -1,0 +1,99 @@
+---
+layout: page
+title: "공간통계를 위한 데이터 사이언스"
+subtitle: "울릉군 독도"
+author:
+  name: "[Tidyverse Korea](https://www.facebook.com/groups/tidyverse/)"
+  url: https://www.facebook.com/groups/tidyverse/
+  affiliation: Tidyverse Korea
+  affiliation_url: https://www.facebook.com/groups/tidyverse/
+date: "`r Sys.Date()`"
+output:
+  html_document: 
+    include:
+      after_body: footer.html
+      before_body: header.html
+    toc: yes
+    toc_depth: 2
+    toc_float: true
+    highlight: tango
+    code_folding: show
+    number_section: true
+    self_contained: true
+bibliography: bibliography_spatial.bib
+csl: biomed-central.csl
+urlcolor: blue
+linkcolor: bluee
+editor_options: 
+  chunk_output_type: console
+---
+ 
+``` {r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE,
+                      comment="", digits = 3, tidy = FALSE, prompt = FALSE, fig.align = 'center')
+```
+
+
+# 울릉도  {#dokdo-elevation}
+
+울릉도는 경상북도 군으로 행정구역상 울릉군이다. [국토정보플랫폼](http://map.ngii.go.kr/) 웹사이트에서 울릉도 역사지도 대동여지도에서 울릉도를 다운로드 받아 살펴보자.
+
+
+
+```{r dokdo-elevation}
+library(rayshader)
+library(sp)
+library(raster)
+library(scales)
+library(magick)
+
+ulleung <- image_read("data/dokdo/(N02면)GM10333IH0014_001.jpg")
+
+ulleung_img <- ulleung %>% 
+  image_resize("10%") %>% 
+  image_crop(geometry = "300x200+110+400") %>% 
+  image_resize("200%")
+
+ulleung_img
+```
+
+
+# 독도 elevation {#dokdo-xyz}
+
+국토정보플랫폼에서 공개DEM에서 독도와 울릉도를 선택하여 지도신청을 통해 독도 xyz 데이터를 얻을 수 있다.
+
+```{r dokdo-xyz}
+library(tidyverse)
+library(raster)
+
+dokdo_xzy <- read_delim("data/dokdo/독도_DEM/37116.xyz", delim = " ", col_name = FALSE) %>% 
+  set_names(c("x", "y", "elevation"))
+
+dokdo_raster <- rasterFromXYZ(dokdo_xzy)
+plot(dokdo_raster)
+```
+
+# 독도 항공사진 {#dokdo-aerial-photo}
+
+국토정보플랫폼에서 요청하여 전달받은 **항공사진**을 PDF 파일 형태로 다운로드 받아 PDF 파일에 포함된 이미지를 [`pdfimager`](https://github.com/sckott/pdfimager/) 팩키지의 도움으로 쉽게 추출해낸다.
+
+```{r aerial-pdf}
+library("pdfimager") # remotes::install_github("sckott/pdfimager")
+
+dokdo_pdf <- pdimg_images("data/dokdo/dokdo-aerial.pdf")
+
+dokdo_aerial_photo_path <- dokdo_pdf[[1]] %>% 
+  select(path) %>% 
+  pull()
+
+dokdo_aerial_photo_path
+
+dokdo_aerial_photo <- image_read(dokdo_aerial_photo_path) %>% 
+  image_resize("20%") %>% 
+  image_crop(geometry = "269x150+10+50") %>% 
+  image_resize("200%")
+
+dokdo_aerial_photo 
+```
+
+

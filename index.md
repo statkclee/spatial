@@ -40,4 +40,9 @@ title: 공간통계를 위한 데이터 과학
     - [생활안전 - 보호관찰소와 범죄](geo-info-crime.html)     
     - [IP 주소 지리정보 시각화](geo-info-ip-address.html)
     - [제18대 대통령선거](geo-18-president.html)
-
+- 참고도서
+    - [Manuel Gimond (2019-08-09), "Intro to GIS and Spatial Analysis"](https://mgimond.github.io/Spatial/index.html)
+    - [Robin Lovelace, Jakub Nowosad, Jannes Muenchow (2020-09-04), "Geocomputation with R"](https://geocompr.robinlovelace.net/)
+- [울릉군 독도](spatial-dokdo.html)
+    
+    
