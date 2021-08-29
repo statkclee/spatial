@@ -91,9 +91,79 @@ dokdo_aerial_photo_path
 dokdo_aerial_photo <- image_read(dokdo_aerial_photo_path) %>% 
   image_resize("20%") %>% 
   image_crop(geometry = "269x150+10+50") %>% 
-  image_resize("200%")
+  image_resize("500%")
 
 dokdo_aerial_photo 
 ```
 
 
+# 독도 Rayshader 3D 렌더링 {#dokdo-xyz-rayshader}
+
+
+
+```{r dokdo-xyz-contour}
+library(tidyverse)
+library(raster)
+
+dokdo_xzy <- read_delim("data/dokdo/독도_DEM/37116.xyz", delim = " ", col_name = FALSE) %>% 
+  set_names(c("x", "y", "elevation")) %>% 
+  filter(x > 631500, 
+         x < 632700,
+         y < 527250,
+         y > 526400)
+
+dokdo_g <- dokdo_xzy %>%
+    ggplot(aes(x = x, y = y, fill = elevation)) +
+      geom_tile() +
+      geom_contour(aes(z = elevation), color = "black") +
+      scale_x_continuous("X", expand = c(0,0)) +
+      scale_y_continuous("Y",expand = c(0,0)) +
+      scale_fill_gradientn("Z", colours = terrain.colors(10)) +
+      coord_fixed()
+
+dokdo_g
+```
+
+등고선 그림을 rayshader 3D 그래픽으로 재현해보자.
+
+
+```{r dokdo-rayshader, eval = FALSE}
+
+dokdo_g %>%
+    plot_gg(
+        multicore = TRUE,
+        raytrace = TRUE,
+        width = 7,
+        height = 4,
+        scale = 300,
+        windowsize = c(1400, 866),
+        zoom = 0.6,
+        phi = 30,
+        theta = 30
+    )
+
+render_movie("fig/movie_dokdo.mp4", frames = 260, fps=30, zoom=1, fov = 30)
+```
+
+![](fig/movie_dokdo.mp4)
+
+## 데이터프레임 &rarr; 행렬 {#tibble2array}
+
+데이터 프레임에서 3D 렌더링을 하면 시간이 많이 걸려 형렬로 변환시킨 후에  `sphere_shade()` 함수를 사용하면 빠르게 결과를 확인할 수 있다.
+
+```{r tibble2array, eval = FALSE}
+library(av)
+
+dokdo_matrix <- dokdo_xzy %>% 
+  pivot_wider(names_from = x, values_from = elevation) %>% 
+  select(-y) %>% 
+  as.matrix()
+
+dokdo_matrix %>%
+    sphere_shade() %>%
+    plot_3d(dokdo_matrix, zscale = 3)
+
+render_movie("fig/movie_dokdo_mat.mp4", frames = 520, fps=30, zoom=1, fov = 45)
+```
+
+![](fig/movie_dokdo_mat.mp4)
