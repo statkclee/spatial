@@ -1,0 +1,67 @@
+---
+layout: page
+title: "공간통계를 위한 데이터 사이언스"
+subtitle: "`geofacet`"
+author:
+- name: "이광춘"
+  affiliation: "[Tidyverse Korea](https://www.facebook.com/groups/tidyverse/)"
+date: "`r Sys.Date()`"
+output:
+  html_document: 
+    include:
+      after_body: footer.html
+      before_body: header.html
+    toc: yes
+    toc_depth: 2
+    toc_float: true
+    highlight: tango
+    code_folding: show
+    number_section: true
+    self_contained: true
+bibliography: bibliography_spatial.bib
+csl: biomed-central.csl
+urlcolor: blue
+linkcolor: bluee
+editor_options: 
+  chunk_output_type: console
+---
+ 
+``` {r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE,
+                      comment="", digits = 3, tidy = FALSE, prompt = FALSE, fig.align = 'center')
+```
+
+
+# 
+
+```{r geofacet-install}
+library(geofacet)
+library(tidyverse)
+
+get_grid_names() %>% 
+  str_detect("kr|korea|seoul") %>% 
+  table()
+
+sido_code_tbl <- tribble(~"시도", ~"시도명", ~"코드", 
+                         "서울", "서울특별시", "11", 
+                         "부산", "부산광역시", "21", 
+                         "대구", "대구광역시", "22", 
+                         "인천", "인천광역시", "23", 
+                         "광주", "광주광역시", "24", 
+                         "대전", "대전광역시", "25", 
+                         "울산", "울산광역시", "26", 
+                         "세종", "세종특별자치시", "29", 
+                         "경기", "경기도", "31", 
+                         "강원", "강원도", "32", 
+                         "충북", "충청북도", "33", 
+                         "충남", "충청남도", "34", 
+                         "전북", "전라북도", "35", 
+                         "전남", "전라남도", "36", 
+                         "경북", "경상북도", "37", 
+                         "경남", "경상남도", "38", 
+                         "제주", "제주특별자치도", "39")
+
+grid_design(data = sido_code_tbl)
+
+```
+
