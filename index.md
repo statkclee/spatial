@@ -45,5 +45,6 @@ title: 공간통계를 위한 데이터 과학
     - [Manuel Gimond (2019-08-09), "Intro to GIS and Spatial Analysis"](https://mgimond.github.io/Spatial/index.html)
     - [Robin Lovelace, Jakub Nowosad, Jannes Muenchow (2020-09-04), "Geocomputation with R"](https://geocompr.robinlovelace.net/)
 - [울릉군 독도](geo-dokdo.html)
+- [서울시 강남구](geo-gangnam.html)
     
     

@@ -1,0 +1,153 @@
+---
+layout: page
+title: "공간통계를 위한 데이터 사이언스"
+subtitle: "geo-gangnam"
+author: "[한국 R 사용자회](https://www.facebook.com/groups/tidyverse/)"
+date: "`r Sys.Date()`"
+output:
+  html_document: 
+    include:
+      after_body: footer.html
+      before_body: header.html
+    toc: yes
+    toc_depth: 2
+    toc_float: true
+    highlight: tango
+    code_folding: show
+    number_section: true
+    self_contained: true
+bibliography: bibliography_spatial.bib
+csl: biomed-central.csl
+urlcolor: blue
+linkcolor: bluee
+editor_options: 
+  chunk_output_type: console
+---
+ 
+``` {r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE,
+                      comment="", digits = 3, tidy = FALSE, prompt = FALSE, fig.align = 'center')
+```
+
+
+# 예제 {#convert-example}
+
+[Creating a map based on address or xy coordinates - convert to lat and long?](https://stackoverflow.com/questions/55572749/creating-a-map-based-on-address-or-xy-coordinates-convert-to-lat-and-long)
+
+[Elevation data in R, Ivan Lizarazo, 21.09.2020](https://rpubs.com/ials2un/elevationfromR)
+
+```{r}
+df <- data.frame( city = "Trinbak", lon = 556305, lat = 6306381 )
+
+library(sf)
+library(leaflet)
+
+df.sf <- st_as_sf( df, coords = c("lon", "lat") ) %>%
+  st_set_crs( 2198 ) %>%   #set coordinate system used
+  st_transform( 4326 )     #transform coordinates to WGS84 coordinates
+
+leaflet() %>% addTiles() %>% addMarkers( data = df.sf )
+```
+
+
+# 서울시 강남구  {#gangnam-elevation}
+
+
+```{r gangnam-elevation}
+
+library(tidyverse)
+library(raster)
+library(viridis)
+library(sf)
+library(ggmap)
+
+sgg_sf <- sf::read_sf("data/shapefile/SIG_201902/TL_SCCO_SIG.shp") %>% 
+  mutate(SIG_KOR_NM = iconv(SIG_KOR_NM, from = "cp949", to ="utf-8"))
+
+# gangnam <- sgg_sf %>% 
+#   filter(SIG_KOR_NM == "강남구") 
+# 
+# gangnam
+
+emd_sf <- sf::read_sf("data/shapefile/EMD_201902/TL_SCCO_EMD.shp")
+
+gangnam <- emd_sf %>% 
+  mutate(EMD_KOR_NM = iconv(EMD_KOR_NM, from = "cp949", to ="utf-8")) %>% 
+  mutate(SIG_CD = str_sub(EMD_CD, 1, 5)) %>% 
+  filter(SIG_CD == 11680) 
+  
+gangnam
+  
+
+library(elevatr)
+elevation <- get_elev_raster(gangnam, z = 14)
+
+elevation 
+
+plot(elevation, main="This the downloaded DEM for Gangnam [meters]")
+plot(gangnam, add=TRUE)
+
+```
+
+```{r}
+
+elevation_tbl <- elevation %>% 
+  as.data.frame(xy=TRUE) %>% 
+  drop_na() %>% 
+  as_tibble() %>% 
+  set_names(c("x", "y", "value")) %>% 
+  filter(value > -10)
+
+gangnam_station <- st_as_sf(tibble(y = 37.497952, x = 127.027619), 
+                            coords = c("x", "y"), remove = FALSE,  
+                            crs = 4326, agr = "constant")
+
+yeoksam_station <- st_as_sf(tibble(y = 37.5007694, x = 127.0368262), 
+                            coords = c("x", "y"), remove = FALSE,  
+                            crs = 4326, agr = "constant")
+
+edu_station <- st_as_sf(tibble(y = 37.4936866, x = 127.0136717), 
+                            coords = c("x", "y"), remove = FALSE,  
+                            crs = 4326, agr = "constant")
+
+
+gangnam %>% 
+  ggplot() +
+    geom_raster(data = elevation_tbl, aes(x= x, y= y, fill = value)) +
+    geom_sf(aes(geometry = geometry), fill = 'transparent')   +
+    scale_fill_viridis_c(name = "높이") +
+    cowplot::theme_cowplot() +
+    labs(x = "", y = "")  +
+    geom_sf(data = gangnam_station,
+               size = 2)  +
+    geom_sf(data = yeoksam_station,
+               size = 2) +
+    geom_sf(data = edu_station,
+               size = 2)
+  
+
+  
+  
+
+skimr::skim(elevation_tbl)
+
+
+
+```
+
+```{r}
+library(rayshader)
+
+gangnam_matrix <- elevation_tbl %>% 
+  pivot_wider(names_from = x, values_from = value) %>% 
+  select(-y) %>% 
+  as.matrix()
+
+gangnam_matrix %>%
+    sphere_shade() %>%
+    plot_3d(gangnam_matrix, zscale = 3)
+
+render_movie("fig/movie_dokdo_mat.mp4", frames = 520, fps=30, zoom=1, fov = 45)
+
+```
+
