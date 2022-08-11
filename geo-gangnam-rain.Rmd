@@ -32,22 +32,36 @@ knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE,
 
 # 강수량 {#convert-example}
 
+공공데이터포털에서 "기상청 지상(종관, ASOS) 일자료 조회서비스" API를 사용하여 
+기상데이터를 가져와서 강수량 데이터를 가공한다.
 
 ```{r}
 library(httr)
+library(tidyverse)
 
-rain_req <- glue::glue("http://openAPI.seoul.go.kr:8088/",
-                       "{Sys.getenv('DATA_RAIN_APIKEY')}/xml/ListRainfallService/1/5/")
-
-xml2::read_xml(rain_req)
+rain_req <- glue::glue("http://apis.data.go.kr/1360000/AsosDalyInfoService/getWthrDataList",
+                       "?serviceKey={Sys.getenv('DATA_KMA_APIKEY')}",
+                       "&numOfRows=10",
+                       "&pageNo=1",
+                       "&dataCd=ASOS",
+                       "&dateCd=DAY",
+                       "&startDt=20100101",
+                       "&endDt=20220810",
+                       "&stnIds=108",
+                       "&dataType=JSON")
 
 rain_response <- GET(rain_req, verbose())
 
-content(rain_response)
+rain_json <- content(rain_response, "text") 
 
-library(rvest)
+rain_list <- jsonlite::fromJSON(rain_json)
 
-read_html(rain_req, encoding = "cp949")
+rain_df <- rain_list$response$body$items$item
+
+rain_df %>% 
+  as_tibble() %>% 
+  select(1:5)
+
 
 ```
 
